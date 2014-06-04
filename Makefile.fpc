@@ -2,6 +2,9 @@
 name=causerie
 version=1.0
 
+[requires]
+packages=LazUtils
+
 [compiler]
 unitdir=./src/base:./src/parse
 targetdir=./build

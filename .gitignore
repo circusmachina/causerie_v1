@@ -1,9 +1,11 @@
 *~
 backup/*
 doc/*
+!doc/causerie.css
 icon/*
 !icon/causerie_square_64.png
 !icon/causerie.ico
 lib/*
 build/*
-
+src/base/backup/*
+src/parse/backup/*

@@ -31,7 +31,7 @@
       @item(string handling: @link(Charstring))
       @item(iteration: @link(CanIterate) and @link(AnIterator) and its
             descendants)
-      @item(managed arrays: @link(AManagedArray) and its descendants
+      @item(vectors: @link(AVector) and its descendants)
   )
 
   All of this functionality routinely serves as the basis for my projects, and
@@ -73,8 +73,9 @@ interface
 {$I logging.inc}
 {$I loggingobjects.inc}
 {$I memory.inc}
-{$I managedarrays.inc}
-{$I managedpointerarrays.inc}
+{$I vectors.inc}
+{$I pointervectors.inc}
+{$I objectvectors.inc}
 
 {$UNDEF ReadInterface}
 
@@ -93,7 +94,7 @@ resourcestring
   {$I dictionaries.inc}
   {$I counters.inc}
   {$I loggeditems.inc}
-  {$I managedarrays.inc}
+  {$I vectors.inc}
 
   {$UNDEF ReadResourceStrings}
 
@@ -128,8 +129,9 @@ uses
 {$I logging.inc}
 {$I loggingobjects.inc}
 {$I memory.inc}
-{$I managedarrays.inc}
-{$I managedpointerarrays.inc}
+{$I vectors.inc}
+{$I pointervectors.inc}
+{$I objectvectors.inc}
 
 {$UNDEF ReadImplementation}
 

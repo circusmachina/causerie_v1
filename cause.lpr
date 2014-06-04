@@ -1,6 +1,7 @@
 { causerie: A simple, elegant, and powerful programming language.
   Copyright (C) 2014 Michael Malicoat (michael@circusmachina.com).
     Home page: http://causerie.circusmachina.com
+    Source code: https://github.com/circusmachina/causerie_v1
     Bug tracker: http://mantis.circusmachina.com
 
   This program will eventually become causerie v1.0.
@@ -26,7 +27,7 @@ uses
   {$IFDEF UNIX}{$IFDEF UseCThreads}
   cthreads,
   {$ENDIF}{$ENDIF}
-  classwork;
+  classwork, parsing;
 
 {$R *.res}
 

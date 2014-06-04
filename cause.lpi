@@ -34,7 +34,12 @@
         <FormatVersion Value="1"/>
       </local>
     </RunParams>
-    <Units Count="2">
+    <RequiredPackages Count="1">
+      <Item1>
+        <PackageName Value="LazUtils"/>
+      </Item1>
+    </RequiredPackages>
+    <Units Count="4">
       <Unit0>
         <Filename Value="cause.lpr"/>
         <IsPartOfProject Value="True"/>
@@ -45,6 +50,15 @@
         <IsPartOfProject Value="True"/>
         <UnitName Value="classwork"/>
       </Unit1>
+      <Unit2>
+        <Filename Value="src/parse/parsing.pp"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="parsing"/>
+      </Unit2>
+      <Unit3>
+        <Filename Value="src/base/objectvectors.inc"/>
+        <IsPartOfProject Value="True"/>
+      </Unit3>
     </Units>
   </ProjectOptions>
   <CompilerOptions>
@@ -54,7 +68,7 @@
     </Target>
     <SearchPaths>
       <IncludeFiles Value="$(ProjOutDir)"/>
-      <OtherUnitFiles Value="src/base"/>
+      <OtherUnitFiles Value="src/base;src/parse"/>
       <UnitOutputDirectory Value="lib/$(TargetCPU)-$(TargetOS)"/>
     </SearchPaths>
     <Other>
