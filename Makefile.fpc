@@ -1,0 +1,13 @@
+[package]
+name=causerie
+version=1.0
+
+[compiler]
+unitdir=./src/base:./src/parse
+targetdir=./build
+unittargetdir=./lib
+includedir=./src/base:./src/parse
+
+[target]
+programs=causerie
+units=classwork parsing
