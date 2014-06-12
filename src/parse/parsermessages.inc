@@ -306,9 +306,9 @@ end;
     @link(AParserFatalError.toString).
 
     The first string placeholder is the name of the source stream being parsed,
-    as determined by a call to @link(AStream.name).  If the source stream
-    represents a file stream, then this will contain the name of the file being
-    parsed.  The integer placeholder will be filled with the current line
+    as determined by a call to @link(AnObject.name AStream.name).  If the source
+    stream represents a file stream, then this will contain the name of the file
+    being parsed.  The integer placeholder will be filled with the current line
     number in the source stream, as determined by a call to
     @link(AScanner.lineNumber).  The second string placeholder is filled with
     the error or status message, which is constructed by calling the inherited

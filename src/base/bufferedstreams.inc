@@ -77,8 +77,8 @@ type ABufferedStream = class(AStreamWrapper)
 
     { Free the buffered stream instance and the buffer it uses.
 
-      If @link(ABufferedStreamInstance.ownsTarget) is @true, then this
-      method will free the target stream.
+      If @link(AStreamWrapper.ownsTarget ABufferedStream.ownsTarget) is @true,
+      then this method will free the target stream.
     }
     destructor destroy; override;
 

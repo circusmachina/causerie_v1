@@ -24,7 +24,8 @@
             descendants)
       @item(parsing: @link(AParser), @link(ASourceParser) and their descendants)
       @item(statement handling: @link(AStatement) and its descendants)
-      @item(symbol tables: @link(ASymbolTable) and its descendants)
+      @item(symbols and symbol tables: @link(ASymbol), @link(ASymbolTable) and
+            their descendants)
       @item(intermediate code streams: @link(ABookmarkedStream) and its
             descendants)
   )
@@ -47,28 +48,26 @@ uses
 {$I syntax.inc}
 {$I languages.inc}
 {$I symbols.inc}
-{$I symboltypes.inc}
-{$I structuredsymbols.inc}
+{$I symbolcollections.inc}
 {$I tokens.inc}
 {$I tokenlists.inc}
 {$I sourcetokens.inc}
 {$I scanners.inc}
 {$I sourcescanners.inc}
 {$I sourcestreams.inc}
-{$I sourcesymbols.inc}
 {$I parsermessages.inc}
 {$I parsers.inc}
 {$I parsedlanguageparsers.inc}
-{$I sourceparsers.inc}
+{I sourceparsers.inc}
 
 {$UNDEF ReadInterface}
 
 resourcestring
-{$DEFINE ReadResourceStrings}
-{$I tokens.inc}
-{$I parsermessages.inc}
-{$I parsers.inc}
-{$UNDEF ReadResourceStrings}
+  {$DEFINE ReadResourceStrings}
+  {$I tokens.inc}
+  {$I parsermessages.inc}
+  {$I parsers.inc}
+  {$UNDEF ReadResourceStrings}
 
 implementation
 
@@ -80,19 +79,17 @@ uses
 {$I syntax.inc}
 {$I languages.inc}
 {$I symbols.inc}
-{$I symboltypes.inc}
-{$I structuredsymbols.inc}
+{$I symbolcollections.inc}
 {$I tokens.inc}
 {$I tokenlists.inc}
 {$I sourcetokens.inc}
 {$I scanners.inc}
 {$I sourcescanners.inc}
 {$I sourcestreams.inc}
-{$I sourcesymbols.inc}
 {$I parsermessages.inc}
 {$I parsers.inc}
 {$I parsedlanguageparsers.inc}
-{$I sourceparsers.inc}
+{I sourceparsers.inc}
 
 {$UNDEF ReadImplementation}
 

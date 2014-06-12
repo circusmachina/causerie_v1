@@ -25,7 +25,7 @@ Sorting_7=0
 Sorting_8=0
 Sorting_9=0
 CssFileName=doc/causerie.css
-IntroductionFileName=
+IntroductionFileName=doc/introduction.md
 ConclusionFileName=
 WriteUsesList=1
 AutoAbstract=1
@@ -35,10 +35,15 @@ UseTipueSearch=1
 LineBreakQuality=0
 SpecialMarkerTreatment=1
 Title=causerie
-VizGraphClasses=0
+VizGraphClasses=1
 VizGraphUses=0
 CheckSpelling=0
 LatexGraphicsPackage=0
+VizGraphAlignLeftRight=1
+VizGraphImageFormat=35
+VizGraphDotExecutablePath=dot
+HTMLOutputUseMarkdown=1
+MarkdownExecutablePath=markdown
 
 [Defines]
 Count=4
@@ -68,6 +73,10 @@ Count=0
 
 [SpecialMarkers]
 Count=0
+
+[VizGraphOtherArguments]
+Count=1
+Item_0=-Gsize=11,11
 
 [IgnoreWords]
 Count=0

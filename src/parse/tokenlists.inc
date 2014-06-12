@@ -28,8 +28,8 @@ type ATokenList = class(ALinkedList)
 
     { Push @code(ThisToken) onto the end of the list.
 
-      After calling this routine, @link(TokenList.LastToken) will return
-      a reference to @code(ThisToken), while a call to @link(TokenList.Pop)
+      After calling this routine, @link(ATokenList.LastToken) will return
+      a reference to @code(ThisToken), while a call to @link(ATokenList.Pop)
       will remove @code(ThisToken) and return it to the caller.
     }
     procedure push(const ThisToken: AToken); virtual;

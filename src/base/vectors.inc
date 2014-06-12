@@ -83,7 +83,7 @@ type AVector = class(APrintingObject, CanStream)
 
       This method calls @code(System.reallocMem) to obtain a memory block that
       is large enough to hold @code(elementCount) elements that are all
-      @link(AManagedArray.elementSize) bytes in length.  If the array already
+      @link(AVector.elementSize) bytes in length.  If the array already
       has a buffer allocated to it, then this method will attempt to increase
       the size of the array to include the new elements while preserving the
       existing elements.
@@ -335,10 +335,11 @@ type AVectorAllocationError = class(AVectorError);
     when there is exactly one item in the array.
 
     The string placeholder is filled with the display name of the class,
-    as returned by a call to @link(APrintingObject.displayName).  The
-    integer placeholder is filled with the total number of elements in the
-    managed array, as returned by a call to @link(AVector.length).  This
-    value will always be one (1) when this string is used.
+    as returned by a call to
+    @link(APrintingObject.displayName AVector.displayName).  The integer
+    placeholder is filled with the total number of elements in the managed
+    array, as returned by a call to @link(AVector.length).  This value will
+    always be one (1) when this string is used.
   }
   vctrStringRepresentationSingular = '%s that contains %d item';
 
@@ -347,7 +348,8 @@ type AVectorAllocationError = class(AVectorError);
     are zero (0) or more than 1 (1) items in the array.
 
     The string placeholder is filled with the display name of the class, as
-    returned by a call to @link(APrintingObject.displayName).  The integer
+    returned by a call to
+    @link(APrintingObject.displayName AVector.displayName).  The integer
     placeholder is filled with the total number of elements in the managed
     array, as returned by a call to @link(AVector.length).
   }
@@ -355,7 +357,7 @@ type AVectorAllocationError = class(AVectorError);
 
   { This string controls the format of the error message passed to an instance
     of @link(AVectorAllocationError) when a call to
-    @link(AVector.ofElements) or @link(AVector.grow) fails to
+    @link(AVector.ofLength) or @link(AVector.grow) fails to
     allocate memory for the array.
 
     The integer placeholder is replaced with the total size of memory requested
@@ -531,10 +533,6 @@ end;
 
 // Pop an element from the array
 procedure AVector.popElement(const destElement: pointer);
-
-var
-  // Refers to the part of the buffer from which values are copied
-  deletionPoint: pointer;
 
 begin
   if (myBuffer = nil) or (myLength = 0) or (destElement = nil) then

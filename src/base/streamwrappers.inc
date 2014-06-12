@@ -74,8 +74,8 @@ type AStreamWrapper = class(AStream)
     { Retrieve the name of the stream.
 
       This method overrides the behavior inherited from @link(AStream): it
-      calls @link(AStream.name) on the target stream and returns that value.
-      This means that if the wrapper is working with an instance of
+      calls @link(AnObject.name AStream.name) on the target stream and returns
+      that value.  This means that if the wrapper is working with an instance of
       @link(AFileStream), then calling this method will return the name of the
       file being streamed -- handy!
     }
@@ -134,7 +134,7 @@ type AStreamWrapper = class(AStream)
       stream for which the contents are being buffered.
 
       The reference returned by this function should NOT be freed by the caller.
-      If @link(ABufferedStream.ownsTarget) is @true, then the buffered stream
+      If @link(AStreamWrapper.ownsTarget) is @true, then the buffered stream
       instance will free the target stream when it is itself freed.
     }
     function Target: AStream; virtual;
@@ -150,7 +150,7 @@ type AStreamWrapper = class(AStream)
       If this method is used to alter the target stream, the caller should also
       call @link(AStreamWrapper.setOwnsTarget) to indicate whether or not the
       wrapper assumes ownership of the new target.  By default, this method
-      sets @link(AStreamWrappers.ownsTarget) to @false when it is called.
+      sets @link(AStreamWrapper.ownsTarget) to @false when it is called.
 
       @return(The previous target, if any.  If this method does not return
       @nil, then it is the caller's responsibility to free the previous target

@@ -115,9 +115,9 @@ const
     the type of token represented by a specific opcode.
 
     This constant is used to define a valid numeric constant.  If the token
-    has been parsed by the base instance of @link(ANumberToken), and the token
-    opcode contains this category, then it means that the sequence of characters
-    contained by the token evaluates to a valid number.
+    has been parsed by the base instance of @link(ANumericConstantToken), and
+    the token opcode contains this category, then it means that the sequence of
+    characters contained by the token evaluates to a valid number.
   }
   TOKCAT_NUMBER = $00040000;
 
@@ -162,9 +162,10 @@ const
 
     This constant is used to define a sequence of at least one character that
     represents the end of a line in the source being parsed.  If the token has
-    been processed by the base instance of @link(AnEndOfLineToken), then the
-    token text may contain one or two characters, depending upon whether the
-    source file has Windows, Apple, or Unix/Linux-based line endings.
+    been processed by the base instance of @link(ALineEndingTokenFromSource),
+    then the token text may contain one or two characters, depending upon
+    whether the source file has Windows, Apple, or Unix/Linux-based line
+    endings.
   }
   TOKCAT_EOL = $000A0000;
 
@@ -191,11 +192,10 @@ const
     the type of token represented by a specific opcode.
 
     This constant is used to define an unrecognized or erroneous token.  The
-    base instances of @link(ANumberToken) and @link(AStringToken) will place
-    themselves in this category if the number or string processed fails to
-    meet basic checks of validity; this allows the parser to complain that
-    something in the source looks like a number or string constant, but is not
-    actually one.
+    base instances of @link(ANumericConstantToken) will place themselves in
+    this category if the number failed to meet basic checks of validity; this
+    allows the parser to complain that something in the source looks like a
+    number or string constant, but is not actually one.
   }
   TOKCAT_ERROR = $00FF0000;
 
@@ -257,7 +257,7 @@ type AParsedLanguage = class(AnObject)
       method to match token strings with opcodes, usually by calling
       @link(AnOpcodeDictionary.bind) or @link(AnOpcodeDictionary.bindSeveral)
       on @code(Self.Opcodes).  This allows
-      @link(AParsedLanguage.meaningOf) to match a given token string with its
+      @link(AParsedLanguage.opcodeFor) to match a given token string with its
       internal representation.
     }
     procedure defineOpcodes; virtual; abstract;
@@ -301,9 +301,10 @@ type AParsedLanguage = class(AnObject)
 
       This method searches for an instance of @code(ch) in the various
       character category definitions provided by
-      @link(AParsedLanguage.myCharacterTypes).  If a match is found, the
+      @link(AParsedLanguage.myCharacterCategories).  If a match is found, the
       appropriate character category is returned.  If no match is found for the
-      given character, then this method returns @link(CHARCAT_ERROR).
+      given character, then this method returns
+      @link(ACharacterCategory CHARCAT_ERROR).
 
       @code(ch) is passed as a string so that the language definition can
       support both UTF-8 and ASCII characters.
@@ -317,7 +318,7 @@ type AParsedLanguage = class(AnObject)
       category definitions specified by @code(categoryList).  The first
       category that has the specified character is returned.  If none of the
       categories specified contains @code(ch), then this method returns
-      @link(CHARCAT_DUMMY).
+      @link(ACharacterCategory CHARCAT_DUMMY).
 
       @code(ch) is passed as a string so that the language definition can
       support both UTF-8 and ASCII characters.

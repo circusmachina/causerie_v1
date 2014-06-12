@@ -46,7 +46,7 @@ type
     { Stores the key used to sort the node. }
     mySortKey: TSortKey;
     { Stores the index of the node }
-    myIndex: longword;
+    myIndex: integer;
 
   public
     { Construct a new node that uses the specified value as its sort key. }
@@ -109,7 +109,7 @@ type
       hash value of the specified string.
 
       This method takes the hash value of @code(thisKey), as calculated by a
-      call to @link(Charstring.hashValue), and then calls the integer version
+      call to @link(Charstring.hashValueOf), and then calls the integer version
       of @link(ABinaryLeaf.fetch) on @code(Self).
 
       @return(A reference to the node that contains a sort key which matches the
@@ -163,7 +163,7 @@ type
       The fact that a pointer to @code(ABinaryLeaf) is returned allows the
       caller to directly manipulate the point at which a node containing
       @code(thisKey) is inserted into the overall tree.  This behavior is
-      used by @link(ABinaryTree.remove) to unlink a given node from its
+      used by @link(ABinaryTree.removeLeaf) to unlink a given node from its
       position within the tree.
     }
     function insertionPointOf(const thisKey: TSortKey): ABinaryLeafPointer;
@@ -173,8 +173,8 @@ type
       the hash value of @code(thisKey).
 
       This method takes the hash value of @code(thisKey), as calculated by a
-      call to @link(Charstring.hashValue), and then calls the integer version of
-      @link(ABinaryLeaf.insertionPointOf).
+      call to @link(Charstring.hashValueOf), and then calls the @link(TSortKey)
+      implementation of @link(ABinaryLeaf.insertionPointOf).
     }
     function insertionPointOf(const thisKey: string): ABinaryLeafPointer;
       virtual;
@@ -183,8 +183,8 @@ type
 
       This method does little more than nullify the references to the left
       and right subtrees of the node before calling the inherited routine.
-      It is called by @link(ABinaryTree.remove) as part of the process involved
-      in removing a specific node from the overall tree.
+      It is called by @link(ABinaryTree.removeLeaf) as part of the process
+      involved in removing a specific node from the overall tree.
     }
     procedure detach; override;
 
@@ -195,7 +195,7 @@ type
       see whether @code(Other) is an instance of @link(ABinaryLeaf).  If so,
       it copies the values of
       @unorderedList(
-        @item(@link(ABinaryLeaf.key) and)
+        @item(@link(ABinaryLeaf.sortKey) and)
         @item(@link(ABinaryLeaf.index))
       )
       from @code(Other) to @code(Self), overwriting any values in @code(Self).
@@ -205,7 +205,7 @@ type
       Likewise, it does NOT copy the left or right subtrees and so cannot be
       used to create a full copy of any descendant of @link(ABinaryLeaf).
       The copy will NOT be automatically placed in the binary tree to which
-      @link(Other) belongs, if any, but the caller is free to do so, so long
+      @code(Other) belongs, if any, but the caller is free to do so, so long
       as the node's sort key does not match one that already exists in the
       tree.
     }
@@ -252,7 +252,7 @@ type
 
       As implemented within @link(ABinaryLeaf), the left subtree contains all
       nodes with values that are LESS than that of @code(Self), as determined
-      by a call to @link(CanCompare.isLessThan).
+      by comparing their sort keys.
 
       If there are no nodes in the left subtree, this routine will return
       @nil.
@@ -264,7 +264,7 @@ type
 
       As implemented within @link(ABinaryLeaf), the right subtree contains all
       nodes with values that are GREATER than that of @code(Self), as
-      determined by a call to @link(CanCompare.isGreaterThan).
+      determined by comparing their sort keys.
 
       If there are no nodes in the right subtree, this routine will return
       @nil.
@@ -284,11 +284,10 @@ type
 
       The primary purpose of this value is to use when serializing the parent
       tree to which the node belongs, usually for storage in a stream and
-      later recall by an instance of @link(ASerializedList).  One scenario
-      where this behavior would be used is in the creation and storage of a
-      symbol table.
+      later recall by an instance of @link(AVector).  One scenario where this
+      behavior would be used is in the creation and storage of a symbol table.
     }
-    function index: longword; virtual;
+    function index: integer; virtual;
 end;
 
 // ABinaryTree *****************************************************************
@@ -321,7 +320,7 @@ type
       @code(thisKey), if found; @nil otherwise.  This routine will also return
       @nil if the tree has no nodes.)
     }
-    function fetchLeaf(const thisKey: TSortKey): ABinaryLeaf; virtual;
+    function FetchLeaf(const thisKey: TSortKey): ABinaryLeaf; virtual;
 
     { Searches the root node and its subtrees for the leaf which has a sort key
       that matches the hash value of @code(thisKey).
@@ -333,15 +332,16 @@ type
       which matches the hash value of @code(thisKey), if found; @nil otherwise.
       This method will also return @nil if the tree has no nodes.)
     }
-    function fetchLeaf(const thisKey: string): ABinaryLeaf; virtual;
+    function FetchLeaf(const thisKey: string): ABinaryLeaf; virtual;
 
     { Retrieves the node at the specified index.
 
       Unlike instances of @link(ALinkedList), @code(index) must be an absolute
       offset -- that is, an offset relative to the root node of the tree.  The
       root node will always be at index zero (0).  If @code(index) specifies a
-      value that is greater than or equal to @link(ABinaryTree.census), then
-      the last node in the tree is returned.
+      value that is greater than or equal to
+      @link(ANode.census ABinaryTree.census), then the last node in the tree is
+      returned.
 
       This method searches sequentially through the nodes in the tree and so
       may be inefficient for large trees.
@@ -349,7 +349,7 @@ type
       @return(A reference to the node with the specified index, if found;
       @nil otherwise).
     }
-    function leafAtIndex(thisindex: longword): ABinaryLeaf; virtual;
+    function LeafAtIndex(thisindex: longword): ABinaryLeaf; virtual;
 
     { Determine whether or not the root node or its subtrees contain a node
       with a sort key that matches @code(thisKey).
@@ -407,7 +407,7 @@ type
 
       #)
 
-      Alternatively, you can call @link(ABinaryTree.add), which will return
+      Alternatively, you can call @link(ABinaryTree.addLeaf), which will return
       @true or @false to indicate whether the new node was successfully
       inserted.
 
@@ -419,7 +419,7 @@ type
       node with the same sort key as @code(Leaf) already exists in the tree,
       then a reference to that node is returned.)
     }
-    function insertLeaf(const Leaf: ABinaryLeaf): ABinaryLeaf; virtual;
+    function InsertLeaf(const Leaf: ABinaryLeaf): ABinaryLeaf; virtual;
 
     { Add a new node to the tree, provided that a node with sort key specified
       by @code(Leaf) does not already exist in the tree.
@@ -451,19 +451,19 @@ type
       tree.
 
       Use this method with care!  Because @link(ABinaryTree) relies on the
-      current value of @link(ANode.census) to determine the index of new nodes
-      that are inserted into the tree, removing and then adding nodes could
-      result in nodes with duplicate indices in the same tree.  If you rely on
-      indices being constant, you should call ensure that
-      @code(updateIndices) is @true, so that @link(ABinaryTree.reindex) is
-      called after the node is deleted.
+      current value of @link(ANode.census ABinaryLeaf.census) to determine the
+      index of new nodes that are inserted into the tree, removing and then
+      adding nodes could result in nodes with duplicate indices in the same
+      tree.  If you rely on indices being constant and unique, you should call
+      ensure that  @code(updateIndices) is @true, so that
+      @link(ABinaryTree.reindex) is called after the node is deleted.
 
       @return(A reference to the node with a sort key that matches the one
       specified, if found; @nil otherwise.  If the node is found, the caller
       is given responsibility for freeing it, as it will no longer be part of
       the tree.)
     }
-    function removeLeaf(const thisKey: TSortKey;
+    function RemoveLeaf(const thisKey: TSortKey;
       const updateIndices: boolean = true): ABinaryLeaf; virtual;
 
     { Removes from the tree, but does not free, the node with a key that
@@ -475,33 +475,33 @@ type
       reinserted into the tree.
 
       Use this method with care!  Because @link(ABinaryTree) relies on the
-      current value of @link(ANode.census) to determine the index of new nodes
-      that are inserted into the tree, removing and then adding nodes could
-      result in nodes with duplicate indices in the same tree.  If you rely on
-      indices being constant, you should call ensure that
-      @code(updateIndices) is @true, so that @link(ABinaryTree.reindex) is
-      called after the node is deleted.
+      current value of @link(ANode.census ABinaryLeaf.census) to determine the
+      index of new nodes that are inserted into the tree, removing and then
+      adding nodes could result in nodes with duplicate indices in the same
+      tree.  If you rely on indices being constant and unique, you should call
+      ensure that  @code(updateIndices) is @true, so that
+      @link(ABinaryTree.reindex) is called after the node is deleted.
 
       @return(A reference to the node with a sort key that matches the one
       specified, if found; @nil otherwise.  If the node is found, the caller
       is given responsibility for freeing it, as it will no longer be part of
       the tree.)
     }
-    function removeLeaf(const thisKey: string;
+    function RemoveLeaf(const thisKey: string;
       const updateIndices: boolean = true): ABinaryLeaf; virtual;
 
     { Deletes the node with the specified key from the tree.
 
-      This method calls @link(ABinaryTree.remove) to find the node that has
+      This method calls @link(ABinaryTree.removeLeaf) to find the node that has
       @code(thisKey).  If it is found, then the node is freed.
 
       Use this method with care!  Because @link(ABinaryTree) relies on the
-      current value of @link(ANode.census) to determine the index of new nodes
-      that are inserted into the tree, removing and then adding nodes could
-      result in nodes with duplicate indices in the same tree.  If you rely on
-      indices being constant, you should call ensure that
-      @code(updateIndices) is @true, so that @link(ABinaryTree.reindex) is
-      called after the node is deleted.
+      current value of @link(ANode.census ABinaryLeaf.census) to determine the
+      index of new nodes that are inserted into the tree, removing and then
+      adding nodes could result in nodes with duplicate indices in the same
+      tree.  If you rely on indices being constant and unique, you should call
+      ensure that  @code(updateIndices) is @true, so that
+      @link(ABinaryTree.reindex) is called after the node is deleted.
 
       @return(@true if the node was found and freed; @false otherwise.)
     }
@@ -510,17 +510,17 @@ type
 
     { Deletes the node with a key that matches the hash value of @code(thisKey).
 
-      This method calls @link(ABinaryTree.remove) to find the node that has
+      This method calls @link(ABinaryTree.removeLeaf) to find the node that has
       a hash value which matches @code(thisKey).  If it is found, then the node
       is freed.
 
       Use this method with care!  Because @link(ABinaryTree) relies on the
-      current value of @link(ANode.census) to determine the index of new nodes
-      that are inserted into the tree, removing and then adding nodes could
-      result in nodes with duplicate indices in the same tree.  If you rely on
-      indices being constant, you should call ensure that
-      @code(updateIndices) is @true, so that @link(ABinaryTree.reindex) is
-      called after the node is deleted.
+      current value of @link(ANode.census ABinaryLeaf.census) to determine the
+      index of new nodes that are inserted into the tree, removing and then
+      adding nodes could result in nodes with duplicate indices in the same
+      tree.  If you rely on indices being constant and unique, you should call
+      ensure that  @code(updateIndices) is @true, so that
+      @link(ABinaryTree.reindex) is called after the node is deleted.
 
       @return(@true if the node was found and freed; @false otherwise.)
     }
@@ -564,8 +564,8 @@ type
 
       This method overrides the behavior inherited from @link(ABinaryLeaf).
       It first writes the number of nodes in the tree, then calls
-      @link(ABinaryLeaf.writeTo) on its root node, which causes all nodes in
-      the tree to be written to the stream.
+      @link(ANode.writeTo ABinaryLeaf.writeTo) on its root node, which causes
+      all nodes in the tree to be written to the stream.
 
       @return(The total number of bytes written to @code(Dest).)
     }
@@ -576,8 +576,8 @@ type
       This method overrides the behavior inherited from @link(ANode).  It
       first writes a string representation of itself, as obtained by calling
       @link(ABinaryTree.toString), then writes the value of @code(suffix).
-      After that, it calls @link(ABinaryLeaf.printTo) on its root node, which
-      causes all other nodes in the tree to be printed.
+      After that, it calls @link(ANode.printTo ABinaryLeaf.printTo) on its root
+      node, which causes all other nodes in the tree to be printed.
 
       @return(The total number of bytes printed to @code(Dest).)
     }
@@ -614,12 +614,12 @@ type
       stream.
 
       This method overrides the behavior inherited from @link(ANode): it first
-      calls @link(ABinaryTree.printTo) on its left subtree, if any; then
-      prints the string representation returned by a call to
-      @link(ABinaryTree.toString) and calls @link(ABinaryLeaf.printTo) on
-      its root node to recursively print a representation of every node in
-      the tree.  Finally, it calls @link(ABinaryTree.printTo) on its right
-      subtree, if any.
+      calls @link(ABinaryTree.printTo) on its left subtree, if
+      any; then prints the string representation returned by a call to
+      @link(ABinaryTree.toString) and calls
+      @link(ANode.printTo ABinaryLeaf.printTo) on its root node to recursively
+      print a representation of every node in the tree.  Finally, it calls
+      @link(ABinaryTree.printTo) on its right subtree, if any.
 
       @code(prefix) is not used by this routine, but it is passed to the root
       node and can be used there to specify a delimiter for each node that is
@@ -690,7 +690,8 @@ end;
     constructed by @link(ABinaryLeaf.toString).
 
     The string placeholder will be filled with the display name of the class, as
-    returned by a call to @link(APrintingObject.displayName).  The two integer
+    returned by a call to
+    @link(APrintingObject.displayName ABinaryLeaf.displayName).  The two integer
     placeholders will be filled by the index and sort keys of the node,
     respectively.
   }
@@ -701,9 +702,11 @@ end;
     node.
 
     The string placeholder will be filled with the display name of the class, as
-    returned by a call to @link(APrintingObject.displayName).  The integer
-    placeholder will be filled by the value of @link(ABinaryTree.census), which
-    will always be one (1) when this string is used.
+    returned by a call to
+    @link(APrintingObject.displayName ABinaryTree.displayName).  The integer
+    placeholder will be filled by the value of
+    @link(ANode.census ABinaryTree.census), which will always be one (1)
+    when this string is used.
   }
   bntrStringRepresentationSingular = '%s that contains %d node';
 
@@ -712,8 +715,10 @@ end;
     exactly one node.
 
     The string placeholder will be filled with the display name of the class, as
-    returned by a call to @link(APrintingObject.displayName).  The integer
-    placeholder will be filled by the value of @link(ABinaryTree.census).
+    returned by a call to
+    @link(APrintingObject.displayName ABinaryTree.displayName).  The integer
+    placeholder will be filled by the value of
+    @link(ANode.census ABinaryTree.census).
   }
   bntrStringRepresentationPlural = '%s that contains %d nodes';
 
@@ -1053,7 +1058,7 @@ begin
 end;
 
 /// Retrieve the index of the node
-function ABinaryLeaf.index: longword;
+function ABinaryLeaf.index: integer;
 
 begin
   result := myIndex;
@@ -1076,7 +1081,7 @@ begin
 end;
 
 // Fetch the specified node from the tree
-function ABinaryTree.fetchLeaf(const thisKey: TSortKey): ABinaryLeaf;
+function ABinaryTree.FetchLeaf(const thisKey: TSortKey): ABinaryLeaf;
 
 begin
   Result := nil;
@@ -1086,14 +1091,14 @@ begin
 end;
 
 // Fetch the specified node from the tree
-function ABinaryTree.fetchLeaf(const thisKey: string): ABinaryLeaf;
+function ABinaryTree.FetchLeaf(const thisKey: string): ABinaryLeaf;
 
 begin
   Result := Self.fetchLeaf(Charstring.hashValueOf(thisKey));
 end;
 
 // Retrieve the node with the specified index
-function ABinaryTree.leafAtIndex(thisIndex: longword): ABinaryLeaf;
+function ABinaryTree.LeafAtIndex(thisIndex: longword): ABinaryLeaf;
 
 begin
   if thisIndex >= myChildCount then
@@ -1137,7 +1142,7 @@ end;
    leaf will be returned.  If \p Leaf is #nil, then the routine will return
    #nil.
 *}
-function ABinaryTree.insertLeaf(const Leaf: ABinaryLeaf): ABinaryLeaf;
+function ABinaryTree.InsertLeaf(const Leaf: ABinaryLeaf): ABinaryLeaf;
 
 begin
   Result := nil;
@@ -1192,7 +1197,7 @@ end;
    \return The node that was removed from the tree, if one with \p thisKey was
    found; #nil otherwise.
 *}
-function ABinaryTree.removeLeaf(const thisKey: TSortKey;
+function ABinaryTree.RemoveLeaf(const thisKey: TSortKey;
   const updateIndices: boolean = true): ABinaryLeaf;
 
 var
@@ -1207,7 +1212,7 @@ begin
     exit;
 
   // Fetch the node to be deleted
-  Result := Self.fetchLeaf(thisKey);
+  Result := Self.FetchLeaf(thisKey);
   if Result = nil then
     exit;
 
@@ -1268,11 +1273,11 @@ end;
    \return The node that was removed from the tree, if one with \p thisKey was
    found; #nil otherwise.
 *}
-function ABinaryTree.removeLeaf(const thisKey: string;
+function ABinaryTree.RemoveLeaf(const thisKey: string;
   const updateIndices: boolean = true): ABinaryLeaf;
 
 begin
-  Result := Self.removeLeaf(Charstring.hashValueOf(thisKey), updateIndices);
+  Result := Self.RemoveLeaf(Charstring.hashValueOf(thisKey), updateIndices);
 end;
 
 {* Deletes the node that has \p thisKey from the tree.
@@ -1292,7 +1297,7 @@ var
 begin
   result := false;
 
-  ThisNode := Self.removeLeaf(thisKey, updateIndices);
+  ThisNode := Self.RemoveLeaf(thisKey, updateIndices);
 
   if ThisNode <> nil then
   begin

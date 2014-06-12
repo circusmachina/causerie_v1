@@ -164,38 +164,37 @@ begin
 end;
 
 // Resync to the specified rule
-procedure AParsedLanguage.resyncTo(const rule: TSortKey);
+procedure AParsedLanguageParser.resyncTo(const rule: TSortKey);
 
 begin
   if MyLanguage <> nil then
-    Self.resyncTo(MyLanguage.SyntaxRule(rule));
+    inherited resyncTo(MyLanguage.SyntaxRule(rule));
 end;
 
 // Resync to the specified rule
-procedure AParsedLanguage.resyncTo(const rule: string);
+procedure AParsedLanguageParser.resyncTo(const rule: string);
 
 begin
   if MyLanguage <> nil then
-    Self.resyncTo(MyLanguage.SyntaxRule(rule));
+    inherited resyncTo(MyLanguage.SyntaxRule(rule));
 end;
 
 // Skip to one of the tokens in the specified rule
-procedure AParsedLanguage.skipTo(const rule: TSortKey;
+procedure AParsedLanguageParser.skipTo(const rule: TSortKey;
   const silenceInterveningTokens: boolean = true);
 
 begin
   if MyLanguage <> nil then
-    Self.skipTo(MyLanguage.SyntaxRule(rule), silenceInterveningTokens);
+    inherited skipTo(MyLanguage.SyntaxRule(rule), silenceInterveningTokens);
 end;
 
 // Skip to one of the tokens in the specified rule
-procedure AParsedLanguage.skipTo(const rule: string;
+procedure AParsedLanguageParser.skipTo(const rule: string;
   const silenceInterveningTokens: boolean = true);
 
 begin
   if MyLanguage <> nil then
-    Self.skipTo(MyLanguage.SyntaxRule(rule), silenceInterveningTokens);
+    inherited skipTo(MyLanguage.SyntaxRule(rule), silenceInterveningTokens);
 end;
-
 {$ENDIF}
 

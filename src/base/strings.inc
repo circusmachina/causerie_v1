@@ -325,8 +325,6 @@ var
   i, j: integer;
   // Accumulates characters from the delimiter
   thisDelimiter: string;
-  // A character read from the list
-  ch: string;
   // Stores the length of the list string
   listLength: integer;
   // Stores the length of the delimiter string

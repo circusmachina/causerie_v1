@@ -46,7 +46,7 @@ type AStringLeaf = class(ABinaryLeaf)
       This method overrides the behavior inherited from
       @link(ABinaryLeaf.shallowCopyFrom): it calls that method, then checks to
       see whether @code(Other) is an instance of @link(AStringLeaf).  If so,
-      it copies the value of @link(ABinaryLeaf.name) from @code(Other) to
+      it copies the value of @link(AStringLeaf.name) from @code(Other) to
       @code(Self), overwriting the value in @code(Self).
 
       Note that this method does NOT copy any sibling or child nodes and so
@@ -54,7 +54,7 @@ type AStringLeaf = class(ABinaryLeaf)
       Likewise, it does NOT copy the left or right subtrees and so cannot be
       used to create a full copy of any descendant of @link(ABinaryLeaf).
       The copy will NOT be automatically placed in the binary tree to which
-      @link(Other) belongs, if any, but the caller is free to do so, so long
+      @code(Other) belongs, if any, but the caller is free to do so, so long
       as the node's sort key does not match one that already exists in the
       tree.
     }
@@ -102,8 +102,9 @@ end;
 // AStringTree *****************************************************************
 { This class represents a binary tree that is comprised of instances of
   @link(AStringLeaf).  The functionality provided by this class is identical to
-  that of @link(ABinaryTree), except that @link(AStringTree.readFrom) reads
-  instances of @link(AStringLeaf) instead of instances of @link(ABinaryLeaf).
+  that of @link(ABinaryTree), except that
+  @link(ABinaryTree.readFrom AStringTree.readFrom) reads instances of
+  @link(AStringLeaf) instead of instances of @link(ABinaryLeaf).
 }
 type AStringTree = class(ABinaryTree)
   public

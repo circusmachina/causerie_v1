@@ -36,7 +36,7 @@ type AFileStream = class(AStream, CanPrint)
 
     { Destroys the instance.
 
-      This routine is called by @link(TObject.free).  It calls
+      This routine is called by @code(TObject.free).  It calls
       @link(AFileStream.close) automatically, to ensure that the file stream
       is closed and all buffers are flushed to disk before the stream is
       destroyed.
@@ -260,8 +260,8 @@ type AFileStreamOpenError = class(AnException);
 }
 type AFileStreamReadError = class(AnException);
 
-{ An instance of this exception class is raised if @link(AFileOuputStream.write)
-  fails to write data to the underlying file.
+{ An instance of this exception class is raised if
+  @link(AFileOutputStream.write) fails to write data to the underlying file.
 }
 type AFileStreamWriteError = class(AnException);
 

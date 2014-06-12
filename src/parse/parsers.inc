@@ -82,7 +82,7 @@ type AParser = class(AnObject)
       caller; that will be done by the token list to which the token belongs.
 
       If the caller wishes to pop a token from the token list, it should do so
-      by calling @link(ATokenList.Pop) on @link(AParser.TokenList).  It is then
+      by calling @link(ATokenList.Pop) on @link(AParser.Tokens).  It is then
       responsible for freeing the token itself.
     }
     function CurrentToken: AToken; virtual;
@@ -201,7 +201,8 @@ type AParser = class(AnObject)
       @link(TOKCAT_EOS) and the end of the source is encountered before an
       opcode that is part of @code(ThisRule).)
     }
-    procedure skipTo(const ThisRule: ASyntaxRule); virtual;
+    procedure skipTo(const ThisRule: ASyntaxRule;
+      const silenceInterveningTokens: boolean = true); virtual;
 
     { Output a note to the log.
 

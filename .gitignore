@@ -2,6 +2,9 @@
 backup/*
 doc/*
 !doc/causerie.css
+!doc/introduction.md
+!doc/introduction.htm
+!doc/causerie.lang
 icon/*
 !icon/causerie_square_64.png
 !icon/causerie.ico

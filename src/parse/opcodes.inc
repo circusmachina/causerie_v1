@@ -64,7 +64,7 @@ type AnOpcodeDictionaryEntry = class(AStringLeaf)
       Likewise, it does NOT copy the left or right subtrees and so cannot be
       used to create a full copy of any descendant of @link(ABinaryLeaf).
       The copy will NOT be automatically placed in the binary tree to which
-      @link(Other) belongs, if any, but the caller is free to do so, so long
+      @code(Other) belongs, if any, but the caller is free to do so, so long
       as the node's sort key does not match one that already exists in the
       tree.
     }

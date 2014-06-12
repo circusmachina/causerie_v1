@@ -58,7 +58,7 @@ type AStringListItem = class(ANode)
       Note that this method does NOT copy any sibling or child nodes and so
       cannot be used to create a full copy of any descendant of @link(ANode).
       The copy will NOT be automatically placed in the list to which
-      @link(Other) belongs, if any, but the caller is free to do so.
+      @code(Other) belongs, if any, but the caller is free to do so.
     }
     function shallowCopyFrom(const Other: AnObject): boolean; override;
 
@@ -232,8 +232,7 @@ type AStringList = class(ALinkedList)
 
     { Sort the list based on the values of its items.
 
-      This method uses a QuickSort to rearrange the items in the list based on
-      the values returned by @link(AStringListItem.valueForComparison).  If
+      This method uses a QuickSort to rearrange the items in the list.  If
       @code(reverse) is @true, then the items in the list are sorted from the
       highest value to the lowest value; otherwise, they are sorted from lowest
       value to highest value.

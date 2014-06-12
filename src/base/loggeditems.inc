@@ -85,14 +85,14 @@ type ALoggedNote = class(ALoggedItem)
       printing to a text-based device, such as a console.
 
       This method overrides the behavior inherited from
-      @link(ALoggedItem.toString) so that a prefix is included with the
+      @link(Classwork.ALoggedItem.toString) so that a prefix is included with the
       message that indicates it is a note.  This prefix is defined by
       @link(lgntStringRepresentation).
     }
     function toString: AnsiString; override;
 end;
 
-// ALoggedNote *****************************************************************
+// ALoggedHint *****************************************************************
 { This class represents a hint that is logged.  It is defined such that
   the counter it will increment upon being logged is the one specified by
   @link(lghtCounterName) -- by default, a counter named @code(hints).

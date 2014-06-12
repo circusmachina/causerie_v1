@@ -20,23 +20,23 @@
 { This type defines the ways in which instances of @link(AScanner) handle
   instances of certain tokens:
   @unorderedList(
-    @item(@link(SCAN_NO_WHITESPACE): Discard whitespace tokens when they are
+    @item(@code(SCAN_NO_WHITESPACE): Discard whitespace tokens when they are
       encountered.  When this behavior is enabled, @link(AScanner.CurrentToken)
       will never refer to an instance of @link(ASpaceToken), and
       @link(AScanner.next) will read tokens from the source until one is
       encountered that is not determined to be whitespace.
     )
-    @item(@link(SCAN_CONSOLIDATE_WHITESPACE): Consolidate consecutive instances
+    @item(@code(SCAN_CONSOLIDATE_WHITESPACE): Consolidate consecutive instances
       of the same whitespace character into a single instance of
       @link(ASpaceToken).  When this behavior is enabled, consecutive instances
       of the same whitespace character in the source will be collected into
       one instance of @link(ASpaceToken); otherwise, multiple instances of
       @link(ASpaceToken) will be returned.
 
-      Obviously, this flag has no effect if @link(SCAN_NO_WHITESPACE) is
+      Obviously, this flag has no effect if @code(SCAN_NO_WHITESPACE) is
       enabled.
     )
-    @item(@link(SCAN_CONSOLIDATE_LINE_ENDINGS): Consolidate consecutive
+    @item(@code(SCAN_CONSOLIDATE_LINE_ENDINGS): Consolidate consecutive
       instances of the same line ending character into a single instance of
       @link(ALineEndingToken).  When this behavior is enabled, consecutive
       instances of the same line ending character in the source will be
@@ -152,7 +152,7 @@ type AScanner = class(AnIterator)
 
       Scanning begins at the current position within @code(ThisSource).
     }
-    constructor over(const ThisSource: AStream); virtual;
+    constructor forSource(const ThisSource: AStream); virtual;
 
     { Initializer }
     function init: boolean; override;
@@ -252,7 +252,7 @@ end;
 {$ENDIF}
 {$IFDEF ReadImplementation}
 // Constructor
-constructor AScanner.over(const ThisSource: AStream);
+constructor AScanner.forSource(const ThisSource: AStream);
 
 begin
   inherited new;

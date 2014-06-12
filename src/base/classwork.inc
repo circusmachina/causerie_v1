@@ -128,7 +128,7 @@ type AnObject = class(TObject)
 
       @return(@true if the data was copied successfully; @false if not.  Both
       @code(Self) and @code(Other) must be descendants of the same class in
-      order for the copy to succeed.
+      order for the copy to succeed.)
     }
     function shallowCopyFrom(const Other: AnObject): boolean; virtual;
 

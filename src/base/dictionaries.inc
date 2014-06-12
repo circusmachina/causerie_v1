@@ -70,7 +70,7 @@ type ADictionaryEntry = class(AStringLeaf)
       Likewise, it does NOT copy the left or right subtrees and so cannot be
       used to create a full copy of any descendant of @link(ABinaryLeaf).
       The copy will NOT be automatically placed in the binary tree to which
-      @link(Other) belongs, if any, but the caller is free to do so, so long
+      @code(Other) belongs, if any, but the caller is free to do so, so long
       as the node's sort key does not match one that already exists in the
       tree.
     }
@@ -104,9 +104,10 @@ type ADictionaryEntry = class(AStringLeaf)
       printing to a text-based device, such as a console.
 
       The representation returned by this method will include the name of the
-      entry (returned by a call to @link(AStringLeaf.name)) and a string
+      entry (returned by a call to
+      @link(AStringLeaf.name ADictionaryEntry.name)) and a string
       representation of its value (returned by a call to
-      @link(Variants.varToStr)), separated by the delimiter specified in
+      @code(Variants.varToStr)), separated by the delimiter specified in
       @link(dcteDefaultDelimiter).  The format of this string is controlled by
       @link(dcteStringRepresentation).
     }
@@ -317,9 +318,9 @@ type ADictionary = class(ABinaryTree)
 
     { Retrieves the key at the specified index in the dictionary.
 
-      Internally, this method calls @link(ABinaryTree.itemAt) on itself; if
-      that method returns a node, then @link(ADictionaryEntry.name) is called
-      on it.
+      Internally, this method calls @link(ABinaryTree.LeafAtIndex) on itself; if
+      that method returns a node, then
+      @link(AStringLeaf.name ADictionaryEntry.name) is called on it.
 
       @return(The name of the node at the specified @code(index), if found;
       an empty string otherwise.)
@@ -328,7 +329,7 @@ type ADictionary = class(ABinaryTree)
 
     { Retrieves the value at the specified index in the dictionary.
 
-      Internally, this method calls @link(ABinaryTree.itemAt) on itself; if
+      Internally, this method calls @link(ABinaryTree.LeafAtIndex) on itself; if
       that method returns a node, then @link(ADictionaryEntry.value) is called
       on it.
 
@@ -339,7 +340,7 @@ type ADictionary = class(ABinaryTree)
 
     { Set the value of the entry at the specified index in the dictionary.
 
-      Internally, this method calls @link(ABinaryTree.itemAt) on itself; if
+      Internally, this method calls @link(ABinaryTree.LeafAtIndex) on itself; if
       that method returns a node, then @link(ADictionaryEntry.setValue) is
       called on it.
 

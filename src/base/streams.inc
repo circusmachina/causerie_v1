@@ -168,7 +168,7 @@ type
 
       This method will print the contents of @code(str) to the stream.  It is
       primarily designed to be used with text-based output streams, such as
-      @link(AConsoleOutputStream), since it does not record the length of the
+      @link(AStandardOutputStream), since it does not record the length of the
       string so that it can be read later.  To write a string, including its
       length, to the stream, use @link(AStream.writeString) instead.
 
@@ -248,9 +248,7 @@ type
       reads from or writes to the stream will occur at the new position.
 
       This method is useful when it is necessary to read from the stream and
-      then ensure that the same data is read again.  It is used by
-      @link(AToken.returnToSource) to allow the token most recently read from a
-      source stream to be read again.
+      then ensure that the same data is read again.
 
       The absolute value of @code(count) is used.  If @code(count) represents
       a value that is greater than the current offset within the stream (in

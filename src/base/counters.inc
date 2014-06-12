@@ -23,7 +23,7 @@
   value and can optionally throw an exception when that value is exceeded.
 
   Counters descend from @link(AStringLeaf) so that they can be managed by name
-  in a list of counters; this is done by @link(ANamedCounterList).
+  in a list of counters; this is done by @link(ACounterList).
 }
 type ACounter = class(AStringLeaf)
   protected
@@ -87,7 +87,7 @@ type ACounter = class(AStringLeaf)
       Likewise, it does NOT copy the left or right subtrees and so cannot be
       used to create a full copy of any descendant of @link(ABinaryLeaf).
       The copy will NOT be automatically placed in the binary tree to which
-      @link(Other) belongs, if any, but the caller is free to do so, so long
+      @code(Other) belongs, if any, but the caller is free to do so, so long
       as the node's sort key does not match one that already exists in the
       tree.
     }
@@ -190,9 +190,9 @@ type ACounterList = class(AStringTree)
       of @link(ctlsPrintedSummaryHeader).  Both @code(prefix) and @code(suffix)
       are used by this method, if supplied; however, the method passes the
       value of @link(ctlsDefaultPrintingPrefix) and
-      @link(ctlsDefaultPrintingSuffix) to @link(ACounter.printTo) for each
-      named counter; this ensures that each counter is printed on its own line
-      and is indented beneath the banner header.
+      @link(ctlsDefaultPrintingSuffix) to @link(ANode.printTo ACounter.printTo)
+      for each named counter; this ensures that each counter is printed on its
+      own line and is indented beneath the banner header.
 
       @return(The total number of bytes printed to @code(Dest).)
     }
@@ -223,13 +223,13 @@ end;
   }
   cntrStringRepresentation = '%s: %d';
 
-  { This string is used by @link(ACounterList.printTo) as the banner header
+  { This string is used by @link(ACounterList.printSelfTo) as the banner header
     printed to the destination stream before the values of each counter in
     the list are printed.
   }
   ctlsPrintedSummaryHeader = 'Total number of' + lineEnding;
 
-  { This string is used by @link(ACounterList.printTo) as the @code(prefix)
+  { This string is used by @link(ACounterList.printSelfTo) as the @code(prefix)
     passed to @code(ACounter.printTo).  It ensures that a tab character
     precedes the name and value of the counter, so that the name and value
     are indentend beneath the banner header that is specified by
@@ -237,7 +237,7 @@ end;
   }
   ctlsDefaultPrintingPrefix = #9;
 
-  { This string is used by @link(ACounterList.printTo) as the @code(suffix)
+  { This string is used by @link(ACounterList.printSelfTo) as the @code(suffix)
     passed to @code(ACounter.printTo).  It ensures that a newline follows
     the name of value of the counter, so that each counter occupies a single
     line of output.

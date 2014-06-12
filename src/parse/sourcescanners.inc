@@ -38,7 +38,7 @@ type ASourceScanner = class(AScanner)
       @link(ATextInputStream) rather than an intermediate code stream, and it
       requires a language definition to use in order to tokenize the source.
     }
-    constructor over(const ThisSource: ATextInputStream;
+    constructor forSource(const ThisSource: ATextInputStream;
       const ThisLanguage: AParsedLanguage); reintroduce; virtual;
 
     { Initializer }
@@ -48,7 +48,7 @@ type ASourceScanner = class(AScanner)
 
       This method overrides the behavior inherited from @link(AScanner): where
       that method constructs and returns instances of @link(AToken) exclusively,
-      this method will construct and return instances of @link(ASourceToken)
+      this method will construct and return instances of @link(ATokenFromSource)
       for the most part.
 
       This method always succeeds; however, if the end of the source has been
@@ -74,18 +74,18 @@ type ASourceScanner = class(AScanner)
 
       The caller should NOT free this reference without first freeing the
       scanner; the reference is required in order to properly tokenize the
-      source (it is passed to @link(ASourceToken.using).)
+      source (it is passed to @link(ATokenFromSource.using).)
     }
     function Language: AParsedLanguage;
 end;
 {$ENDIF}
 {$IFDEF ReadImplementation}
 // Constructor
-constructor ASourceScanner.over(const ThisSource: ATextInputStream;
+constructor ASourceScanner.forSource(const ThisSource: ATextInputStream;
   const ThisLanguage: AParsedLanguage);
 
 begin
-  inherited over(ThisSource);
+  inherited forSource(ThisSource);
 
   MyLanguage := ThisLanguage;
 end;
@@ -117,7 +117,8 @@ begin
   // This loop will be executed at least once
   repeat
     // Construct the next token
-    MyCurrentToken := ASourceToken.from(ATextInputStream(MySource), MyLanguage);
+    MyCurrentToken :=
+      ATokenFromSource.readUsing(MyLanguage, ATextInputStream(MySource));
 
     // Special behaviors
     case MyCurrentToken.opcode of
@@ -130,7 +131,7 @@ begin
       TOKCAT_EOL: begin
         // Are we consolidating line endings?
         if SCAN_CONSOLIDATE_LINE_ENDINGS in myTokenBehaviors then
-          ASourceLineEndingToken(MyCurrentToken).setConsolidation(true);
+          ALineEndingTokenFromSource(MyCurrentToken).setConsolidation(true);
       end;
     end;
 
@@ -139,7 +140,7 @@ begin
 
     // Update the line count
     if MyCurrentToken.opcode = TOKCAT_EOL then
-      inc(myLineNumber, ASourceLineEndingToken(MyCurrentToken).lineCount);
+      inc(myLineNumber, ALineEndingTokenFromSource(MyCurrentToken).lineCount);
 
     // Are we discarding whitespace
     if (MyCurrentToken.opcode = TOKCAT_SPACE) and
@@ -166,10 +167,10 @@ begin
     exit;
 
   // Read the token
-  Result := ASourceToken.from(ATextInputStream(MySource), MyLanguage);
+  Result := ATokenFromSource.readUsing(MyLanguage, ATextInputStream(MySource));
 
   // Put back the token
-  Result.returnTo(mySource);
+  Result.returnTo(MySource);
 end;
 
 // Properties ------------------------------------------------------------------

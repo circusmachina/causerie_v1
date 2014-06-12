@@ -2,6 +2,8 @@
   Copyright (C) 2014 Michael Malicoat (michael@circusmachina.com).
     Home page: http://causerie.circusmachina.com
     Source code: https://github.com/circusmachina/causerie_v1
+    Source code documentation:
+      http://www.circusmachina.com/projects/causerie/doc/html/index.html
     Bug tracker: http://mantis.circusmachina.com
 
   This program will eventually become causerie v1.0.

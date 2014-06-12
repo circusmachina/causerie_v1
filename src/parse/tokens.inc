@@ -106,7 +106,7 @@ type AToken = class(ANode)
       Note that this method does NOT copy any sibling or child nodes and so
       cannot be used to create a full copy of any descendant of @link(ANode).
       The copy will NOT be automatically placed in the list to which
-      @link(Other) belongs, if any, but the caller is free to do so.
+      @code(Other) belongs, if any, but the caller is free to do so.
     }
     function shallowCopyFrom(const Other: AnObject): boolean; override;
 
@@ -193,8 +193,7 @@ end;
 { This class represents a symbol that is entered into a symbol table.  These
   will usually be identifiers, numeric constants, or string literals.  The
   actual value of the symbol is stored in a separate symbol table, to which
-  the token makes reference by means of @link(ASymbolicToken.scope) and
-  @link(ASymbolicToken.index).
+  the token makes reference by means of @link(ASymbolicToken.symbol).
 }
 type ASymbolicToken = class(AToken)
   protected
@@ -228,7 +227,7 @@ type ASymbolicToken = class(AToken)
       Note that this method does NOT copy any sibling or child nodes and so
       cannot be used to create a full copy of any descendant of @link(ANode).
       The copy will NOT be automatically placed in the list to which
-      @link(Other) belongs, if any, but the caller is free to do so.
+      @code(Other) belongs, if any, but the caller is free to do so.
     }
     function shallowCopyFrom(const Other: AnObject): boolean; override;
 
@@ -247,7 +246,7 @@ type ASymbolicToken = class(AToken)
 
       This method builds upon the behavior inherited from @link(AToken).  It
       calls the inherited routine, then reads the value of
-      @link(ASymbolToken.symbol).
+      @link(ASymbolicToken.symbol).
 
       @return(The total number of bytes read from @code(Source).)
     }
@@ -267,13 +266,14 @@ type ASymbolicToken = class(AToken)
     // Properties --------------------------------------------------------------
     { Retrieve the token scope, which refers to the symbol list to which the
       symbol belongs.  A given source program may have one or more symbol
-      lists, which are indexed within an instance of @link(ASymbolTableList).
+      lists, which are indexed within an instance of
+      @link(ASymbolTableDictionary).
 
       General practice is to define a few global symbol lists: one for all
       string literals, one for all numeric constants, and one for all types; as
       well as one or more local scopes for each routine within the source
       program.  The value returned by this method is the index of the
-      appropriate instance of @link(ASymbolList) within that list.
+      appropriate instance of @link(ASymbolVector) within that list.
     }
     function symbol: TSymbolReference;
 end;
@@ -303,7 +303,7 @@ type ALineEndingToken = class(AToken)
       Note that this method does NOT copy any sibling or child nodes and so
       cannot be used to create a full copy of any descendant of @link(ANode).
       The copy will NOT be automatically placed in the list to which
-      @link(Other) belongs, if any, but the caller is free to do so.
+      @code(Other) belongs, if any, but the caller is free to do so.
     }
     function shallowCopyFrom(const Other: AnObject): boolean; override;
 
@@ -340,10 +340,10 @@ type ALineEndingToken = class(AToken)
     { Retrieve the number of line endings represented by the token.
 
       This value is usually set when an instance of
-      @link(ASourceLineEndingToken) has written itself to an intermediate code
-      stream.  The value will be at least one (1), but may be more depending
-      upon whether or not multiple line endings in the original source were
-      consolidated into one token.
+      @link(ALineEndingTokenFromSource) has written itself to an intermediate
+      code stream.  The value will be at least one (1), but may be more
+      depending upon whether or not multiple line endings in the original source
+      were consolidated into one token.
     }
     function lineCount: longword; virtual;
 end;
@@ -605,7 +605,7 @@ procedure ASymbolicToken.returnTo(const Source: AStream);
 begin
   if Source <> nil then
   begin
-    Source.rewindBy(sizeof(myIndex) + sizeof(myScope));
+    Source.rewindBy(sizeof(mySymbol));
     // Rewind past the opcode
     inherited returnTo(Source);
   end;
@@ -672,17 +672,10 @@ end;
 
 // Properties ------------------------------------------------------------------
 // Retrieve the token scope
-function ASymbolicToken.scope: integer;
+function ASymbolicToken.symbol: TSymbolReference;
 
 begin
-  result := myScope;
-end;
-
-// Retrieve the token index
-function ASymbolicToken.index: longword;
-
-begin
-  result := myIndex;
+  result := mySymbol;
 end;
 
 // ALineEndingToken ************************************************************

@@ -109,11 +109,11 @@ type
 
       This method overrides the behavior inherited from
       @link(AnObject.shallowCopyFrom); it calls that routine, then ascertains
-      whether @link(Other) is an instance of @link(AStreamIterator).  If it is,
+      whether @code(Other) is an instance of @link(AStreamIterator).  If it is,
       then it copies the current values of:
       @unorderedList(
-        @item(@link(AStreamIterator.Stream)),
-        @item(@link(AStreamIterator.value)), and
+        @item(@link(AStreamIterator.Stream),)
+        @item(@link(AStreamIterator.value), and)
         @item(@link(AStreamIterator.size))
       )
       from @code(Other) to @code(Self), overriding any current values in
@@ -132,7 +132,7 @@ type
       This function returns a generic pointer to the most recent value read;
       this pointer can be cast to the appropriate type by the caller.  This
       value is volatile, which means it will be overwritten by the next call
-      to @link(AStream.next).
+      to @link(AStreamIterator.next).
     }
     function value: pointer; virtual;
 

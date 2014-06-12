@@ -69,7 +69,7 @@ type ASyntaxRule = class(AStringLeaf)
 
     { Free the rule and the list of opcodes associated with it.
 
-      This method is called automatically when @link(TObject.free) is called on
+      This method is called automatically when @code(TObject.free) is called on
       an instance of @link(ASyntaxRule).
     }
     destructor destroy; override;
@@ -161,7 +161,7 @@ type ASyntaxRule = class(AStringLeaf)
       Likewise, it does NOT copy the left or right subtrees and so cannot be
       used to create a full copy of any descendant of @link(ABinaryLeaf).
       The copy will NOT be automatically placed in the binary tree to which
-      @link(Other) belongs, if any, but the caller is free to do so, so long
+      @code(Other) belongs, if any, but the caller is free to do so, so long
       as the node's sort key does not match one that already exists in the
       tree.
     }
@@ -215,7 +215,7 @@ type ASyntaxRuleset = class(AStringTree)
     // Properties --------------------------------------------------------------
     { Retrieve a reference to the rule with the specified sort key.
 
-      This method calls @link(ABinaryTree.fetch) on itself, then returns a
+      This method calls @link(ABinaryTree.fetchLeaf) on itself, then returns a
       reference to the resulting rule, if found.  If the rule is not found, then
       this method returns @nil.
 
@@ -228,8 +228,8 @@ type ASyntaxRuleset = class(AStringTree)
 
       The value of @code(thisKey) is hashed by calling
       @link(Charstring.hashValueOf); this value is then passed to
-      @link(ABinaryTree.fetch).  A reference to the matching rule, if found, is
-      returned to the caller.  If the rule is not found, then this method
+      @link(ABinaryTree.fetchLeaf).  A reference to the matching rule, if found,
+      is returned to the caller.  If the rule is not found, then this method
       returns @nil.
 
       The caller should NOT attempt to free the reference returned by this

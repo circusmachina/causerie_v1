@@ -17,14 +17,14 @@
   with this program.  If not, see <http://www.gnu.org/licenses/>.
 }
 {$IFDEF ReadInterface}
-// ASourceToken ****************************************************************
+// ATokenFromSource ************************************************************
 { This class represents a token that is parsed from a source stream.  Its
   methods are defined to retrieve the literal text of the token and match it
   with an opcode defined by a parsed language.  It has methods that enable a
   parser to check syntax and can also write itself to an intermediate code
   stream for further processing by an interpeter.
 }
-type ASourceToken = class(AToken)
+type ATokenFromSource = class(AToken)
   protected
     { Refers to the language definition used to parse the token from the
       source.
@@ -34,23 +34,23 @@ type ASourceToken = class(AToken)
     myText: string;
 
   public
-    { Construct a new instance of @link(ASourceToken) that will use the
+    { Construct a new instance of @link(ATokenFromSource) that will use the
       specified language to tokenize the source.
     }
     constructor using(const ThisLanguage: AParsedLanguage); virtual;
 
-    { Construct and return an instance of @link(ASourceToken) or its
+    { Construct and return an instance of @link(ATokenFromSource) or its
       descendants.
 
       This method is a factory method designed to be called by a scanner on
       an instance of @link(ATextInputStream).  It reads a character from
       @code(Source) and, depending on how that character is defined within
       @code(ThisLanguage), constructs the appropriate instance of
-      @link(ASourceToken) or its descendants which will return that token to the
-      caller.
+      @link(ATokenFromSource) or its descendants which will return that token to
+      the caller.
     }
-    class function from(const Source: ATextInputStream;
-      const ThisLanguage: AParsedLanguage): AToken; reintroduce; virtual;
+    class function readUsing(const ThisLanguage: AParsedLanguage;
+      const Source: ATextInputStream): AToken; virtual;
 
     { Initializer}
     function init: boolean; override;
@@ -97,14 +97,14 @@ type ASourceToken = class(AToken)
 
       This method extends the behavior inherited from
       @link(AToken.shallowCopyFrom): it calls that method, then checks to see
-      whether @code(Other) is an instance of @link(ASourceToken).  If so, it
-      copies the value of @link(ASourceToken.text) from @code(Other) to
+      whether @code(Other) is an instance of @link(ATokenFromSource).  If so, it
+      copies the value of @link(ATokenFromSource.text) from @code(Other) to
       @code(Self), overwriting the value in @code(Self).
 
       Note that this method does NOT copy any sibling or child nodes and so
       cannot be used to create a full copy of any descendant of @link(ANode).
       The copy will NOT be automatically placed in the list to which
-      @link(Other) belongs, if any, but the caller is free to do so.
+      @code(Other) belongs, if any, but the caller is free to do so.
     }
     function shallowCopyFrom(const Other: AnObject): boolean; override;
 
@@ -114,12 +114,12 @@ type ASourceToken = class(AToken)
       This method overrides the behavior inherited from @link(AToken).  It is
       written with the assumption that @code(Source) represents an instance of
       @link(ATextInputStream).  However, in the base implementation of
-      @link(ASourceToken), it does nothing at all; it is for descendants of
-      @link(ASourceToken) to retrieve and parse the token text.
+      @link(ATokenFromSource), it does nothing at all; it is for descendants of
+      @link(ATokenFromSource) to retrieve and parse the token text.
 
       @return(The total number of bytes retrieved from @code(Source).  In the
-      base implementation provided by @link(ASourceToken), this value will
-      always be zero (0).
+      base implementation provided by @link(ATokenFromSource), this value will
+      always be zero (0).)
     }
     function readFrom(const Source: AStream): TStreamIOSize; override;
 
@@ -157,7 +157,7 @@ end;
   contain one or more alphanumeric characters in them, whereas a special token
   may be composed entirely of symbol characters.
 }
-type AnIdentifierToken = class(ASourceToken)
+type AnIdentifierToken = class(ATokenFromSource)
   protected
     { Refers to the symbol represented by the token }
     MySymbol: ASymbol;
@@ -169,7 +169,7 @@ type AnIdentifierToken = class(ASourceToken)
     { Construct a shallow copy of the other object.
 
       This method extends the behavior inherited from
-      @link(ASourceToken.shallowCopyFrom): it calls that method, then checks to
+      @link(ATokenFromSource.shallowCopyFrom): it calls that method, then checks to
       see whether @code(Other) is an instance of @link(AnIdentifierToken).  If
       so, it copies the value of @link(AnIdentifierToken.Symbol) from
       @code(Other) to @code(Self), overwriting the values in @code(Self).
@@ -177,13 +177,13 @@ type AnIdentifierToken = class(ASourceToken)
       Note that this method does NOT copy any sibling or child nodes and so
       cannot be used to create a full copy of any descendant of @link(ANode).
       The copy will NOT be automatically placed in the list to which
-      @link(Other) belongs, if any, but the caller is free to do so.
+      @code(Other) belongs, if any, but the caller is free to do so.
     }
     function shallowCopyFrom(const Other: AnObject): boolean; override;
 
     { Write the token, and just the token, to the specified stream.
 
-      This method builds on the behavior inherited from @link(ASourceToken);
+      This method builds on the behavior inherited from @link(ATokenFromSource);
       it calls the inherited routine and then, if applicable, writes the scope
       and index of @link(AnIdentifierToken.Symbol) to @code(Dest).
 
@@ -251,7 +251,7 @@ type ANumericConstantToken = class(AnIdentifierToken)
     { Determine whether the constant represents an integer or a floating-point
       value.
 
-      This method simply calls @link(VarIsFloat) on @code(Self.value).
+      This method simply calls @code(Variants.VarIsFloat) on @code(Self.value).
     }
     function isInteger: boolean; virtual;
 
@@ -267,7 +267,7 @@ type ANumericConstantToken = class(AnIdentifierToken)
       Note that this method does NOT copy any sibling or child nodes and so
       cannot be used to create a full copy of any descendant of @link(ANode).
       The copy will NOT be automatically placed in the list to which
-      @link(Other) belongs, if any, but the caller is free to do so.
+      @code(Other) belongs, if any, but the caller is free to do so.
     }
     function shallowCopyFrom(const Other: AnObject): boolean; override;
 
@@ -294,7 +294,7 @@ type ANumericConstantToken = class(AnIdentifierToken)
 
       The value returned by this routine represents the computed value of the
       token.  The literal text of the token can be retrieved by calling
-      @link(AToken.text) on the token.
+      @link(ATokenFromSource.text ANumericConstantToken.text) on the token.
     }
     function value: Variant; virtual;
 end;
@@ -338,7 +338,7 @@ end;
   from identifier tokens in that they normally need not be comprised of
   alphanumeric characters.
 }
-type ASpecialToken = class(ASourceToken)
+type ASpecialToken = class(ATokenFromSource)
   public
     // CanStream implementation ------------------------------------------------
     { Read the token from the given source stream.
@@ -364,7 +364,7 @@ end;
   normally discarded, but some parsers (such as for Python) may opt to
   process it instead.
 }
-type ASpaceToken = class(ASourceToken)
+type ASpaceToken = class(ATokenFromSource)
   protected
     { Indicates whether successive instances of a given whitespace character
       should be consolidated into one token or not
@@ -378,7 +378,7 @@ type ASpaceToken = class(ASourceToken)
     { Construct a shallow copy of the other object.
 
       This method extends the behavior inherited from
-      @link(ASourceToken.shallowCopyFrom): it calls that method, then checks to
+      @link(ATokenFromSource.shallowCopyFrom): it calls that method, then checks to
       see whether @code(Other) is an instance of @link(ASpaceToken).  If so, it
       copies the value of @link(ASpaceToken.consolidation) from @code(Other) to
       @code(Self), overwriting the value in @code(Self).
@@ -386,7 +386,7 @@ type ASpaceToken = class(ASourceToken)
       Note that this method does NOT copy any sibling or child nodes and so
       cannot be used to create a full copy of any descendant of @link(ANode).
       The copy will NOT be automatically placed in the list to which
-      @link(Other) belongs, if any, but the caller is free to do so.
+      @code(Other) belongs, if any, but the caller is free to do so.
     }
     function shallowCopyFrom(const Other: AnObject): boolean; override;
 
@@ -440,16 +440,16 @@ type ASpaceToken = class(ASourceToken)
       Python, then those four space characters will be collected into one
       token.  Otherwise, they will be read as four distinct tokens.
 
-      @return(The previous value of @link(ASourceToken.consolidation).)
+      @return(The previous value of @link(ASpaceToken.consolidation).)
     }
     function setConsolidation(const flag: boolean): boolean; virtual;
 end;
 
-// ALineEndingToken ************************************************************
+// ALineEndingTokenFromSource **************************************************
 { This class represents the end of a source line.  Certain parsers may
   process such tokens; others may discard them.
 }
-type ASourceLineEndingToken = class(ASpaceToken)
+type ALineEndingTokenFromSource = class(ASpaceToken)
   protected
     { Stores the number of line endings encountered while tokenizing }
     myLineCount: longword;
@@ -462,22 +462,23 @@ type ASourceLineEndingToken = class(ASpaceToken)
 
       This method extends the behavior inherited from
       @link(ASpaceToken.shallowCopyFrom): it calls that method, then checks to
-      see whether @code(Other) is an instance of @link(ASourceLineEndingToken).
-      If so, it copies the value of @link(ASourceLineEndingToken.lineCount) from
+      see whether @code(Other) is an instance of
+      @link(ALineEndingTokenFromSource).  If so, it copies the value of
+      @link(ALineEndingTokenFromSource.lineCount) from
       @code(Other) to  @code(Self), overwriting the value in @code(Self).
 
       Note that this method does NOT copy any sibling or child nodes and so
       cannot be used to create a full copy of any descendant of @link(ANode).
       The copy will NOT be automatically placed in the list to which
-      @link(Other) belongs, if any, but the caller is free to do so.
+      @code(Other) belongs, if any, but the caller is free to do so.
     }
     function shallowCopyFrom(const Other: AnObject): boolean; override;
 
     { Write the token, and just the token, to the specified stream.
 
-      This method builds on the behavior inherited from @link(ASourceToken).
+      This method builds on the behavior inherited from @link(ATokenFromSource).
       It calls the inherited routine, then writes the value of
-      @link(ASourceLineEndingToken.lineCount) to the stream.
+      @link(ALineEndingTokenFromSource.lineCount) to the stream.
 
       @return(The total number of bytes written to @code(Dest).)
     }
@@ -504,19 +505,19 @@ type ASourceLineEndingToken = class(ASpaceToken)
       source.
 
       This function is most useful when
-      @code(ASourceLineEndingToken.consolidation) is @true but you still want to
-      know how many line endings have been consolidated into one token.
+      @code(ALineEndingTokenFromSource.consolidation) is @true but you still
+      want to know how many line endings have been consolidated into one token.
     }
     function lineCount: longword; virtual;
 end;
 
 // AnErrorToken ****************************************************************
 { This class represents an erroneous or unrecognized token.  Instances of it
-  are normally only constructed when @link(ASourceToken.from) encounters a
-  character in the source stream that has not been classified by the language
+  are normally only constructed when @link(ATokenFromSource.readFrom) encounters
+  a character in the source stream that has not been classified by the language
   definition being used to parse the source.
 }
-type AnErrorToken = class(ASourceToken)
+type AnErrorToken = class(ATokenFromSource)
   public
     { Initializer }
     function init: boolean; override;
@@ -540,9 +541,9 @@ type AnErrorToken = class(ASourceToken)
 end;
 {$ENDIF}
 {$IFDEF ReadImplementation}
-// ASourceToken ****************************************************************
+// ATokenFromSource ****************************************************************
 // Constructor
-constructor ASourceToken.using(const ThisLanguage: AParsedLanguage);
+constructor ATokenFromSource.using(const ThisLanguage: AParsedLanguage);
 
 begin
   inherited new;
@@ -551,8 +552,8 @@ begin
 end;
 
 // Factory method
-class function ASourceToken.from(const Source: ATextInputStream;
-  const ThisLanguage: AParsedLanguage): AToken;
+class function ATokenFromSource.readUsing(const ThisLanguage: AParsedLanguage;
+  const Source: ATextInputStream): AToken;
 
 var
   // Stores a character read from the source
@@ -592,7 +593,7 @@ begin
       Result := ASpaceToken.using(ThisLanguage);
 
     CHARCAT_EOL:
-      Result := ASourceLineEndingToken.using(ThisLanguage);
+      Result := ALineEndingTokenFromSource.using(ThisLanguage);
 
   else
     Result := AnErrorToken.using(ThisLanguage);
@@ -600,7 +601,7 @@ begin
 end;
 
 // Initializer
-function ASourceToken.init: boolean;
+function ATokenFromSource.init: boolean;
 
 begin
   result := inherited init;
@@ -612,7 +613,7 @@ begin
 end;
 
 // Return the token to its source
-procedure ASourceToken.returnTo(const Source: AStream);
+procedure ATokenFromSource.returnTo(const Source: AStream);
 
 begin
   if Source <> nil then
@@ -620,7 +621,7 @@ begin
 end;
 
 // Determine whether the token is part of any of the specified rules
-function ASourceToken.isPartOf(const rules: array of TSortKey): TSortKey;
+function ATokenFromSource.isPartOf(const rules: array of TSortKey): TSortKey;
 
 var
   // Loop counter
@@ -641,7 +642,7 @@ begin
 end;
 
 // Determine whether the token is part of any of the named rules
-function ASourceToken.isPartOf(const rules: array of string): string;
+function ATokenFromSource.isPartOf(const rules: array of string): string;
 
 var
   // Loop counter
@@ -662,25 +663,25 @@ begin
 end;
 
 // Construct a shallow copy of the other object
-function ASourceToken.shallowCopyFrom(const Other: AnObject): boolean;
+function ATokenFromSource.shallowCopyFrom(const Other: AnObject): boolean;
 
 begin
   // Call the inherited routine first
   result := inherited shallowCopyFrom(Other);
 
   // Check to see whether the other object is compatible with us
-  if not(Other is ASourceToken) then
+  if not(Other is ATokenFromSource) then
     result := false;
 
   if result then
   begin
-    myText := ASourceToken(Other).text;
+    myText := ATokenFromSource(Other).text;
   end;
 end;
 
 // CanStream implementation ----------------------------------------------------
 // Read the token from the given stream -- does nothing here
-function ASourceToken.readFrom(const Source: AStream): TStreamIOSize;
+function ATokenFromSource.readFrom(const Source: AStream): TStreamIOSize;
 
 begin
   // Descendant classes should override this
@@ -689,7 +690,7 @@ end;
 
 // CanPrint implementation -----------------------------------------------------
 // Construct a string representation of the token
-function ASourceToken.toString: AnsiString;
+function ATokenFromSource.toString: AnsiString;
 
 begin
   result := Charstring.quote(myText);
@@ -697,14 +698,14 @@ end;
 
 // Properties ------------------------------------------------------------------
 // Retrieve a reference to the language used to tokenize the source
-function ASourceToken.Language: AParsedLanguage;
+function ATokenFromSource.Language: AParsedLanguage;
 
 begin
   Result := MyLanguage;
 end;
 
 // Retrieve the literal text of the token
-function ASourceToken.text: string;
+function ATokenFromSource.text: string;
 
 begin
   result := myText;
@@ -818,42 +819,19 @@ end;
 
 // Properties ------------------------------------------------------------------
 // Retrieve the token scope and index
-function AnIdentifierToken.symbol: TSymbolReference;
+function AnIdentifierToken.Symbol: ASymbol;
 
 begin
-  result := mySymbol;
+  Result := MySymbol;
 end;
 
 // Set the token scope and index
-function AnIdentifierToken.setSymbol(const newSymbol: TSymbolReference): TSymbolReference;
+function AnIdentifierToken.SetSymbol(const NewSymbol: ASymbol): ASymbol;
 
 begin
-  result := mySymbol;
-  mySymbol := newSymbol;
-end;
+  Result := MySymbol;
 
-// Set the token scope and index
-function AnIdentifierToken.setSymbol(const NewSymbol: ASymbol): TSymbolReference;
-
-begin
-  result := mySymbol;
-
-  if NewSymbol <> nil then
-  begin
-    mySymbol.scope := NewSymbol.scope;
-    mySymbol.index := NewSymbol.index;
-  end;
-end;
-
-// Set the token scope and index
-function AnIdentifierToken.setSymbol(const newScope: TSymbolScope;
-  const newIndex: longword): TSymbolReference;
-
-begin
-  result := mySymbol;
-
-  mySymbol.scope := newScope;
-  mySymbol.index := newIndex;
+  MySymbol := NewSymbol;
 end;
 
 // ANumericConstantToken *******************************************************
@@ -1157,9 +1135,9 @@ begin
   myConsolidation := flag;
 end;
 
-// ASourceLineEndingToken ******************************************************
+// ALineEndingTokenFromSource ******************************************************
 // Initializer
-function ASourceLineEndingToken.init: boolean;
+function ALineEndingTokenFromSource.init: boolean;
 
 begin
   result := inherited init;
@@ -1174,24 +1152,24 @@ begin
 end;
 
 // Construct a shallow copy of the other object
-function ASourceLineEndingToken.shallowCopyFrom(const Other: AnObject): boolean;
+function ALineEndingTokenFromSource.shallowCopyFrom(const Other: AnObject): boolean;
 
 begin
   // Call the inherited routine first
   result := inherited shallowCopyFrom(Other);
 
   // Check to see whether we're compatible with the other object
-  if not(Other is ASourceLineEndingToken) then
+  if not(Other is ALineEndingTokenFromSource) then
     result := false;
 
   if result then
   begin
-    myLineCount := ASourceLineEndingToken(Other).lineCount;
+    myLineCount := ALineEndingTokenFromSource(Other).lineCount;
   end;
 end;
 
 // Write the token to the given stream
-function ASourceLineEndingToken.writeSelfTo(const Dest: AStream): TStreamIOSize;
+function ALineEndingTokenFromSource.writeSelfTo(const Dest: AStream): TStreamIOSize;
 
 begin
   result := 0;
@@ -1206,7 +1184,7 @@ end;
 
 // CanStream implementation ----------------------------------------------------
 // Read the token from the specified stream
-function ASourceLineEndingToken.readFrom(const Source: AStream): TStreamIOSize;
+function ALineEndingTokenFromSource.readFrom(const Source: AStream): TStreamIOSize;
 
 var
   // Refers to a character read from the stream
@@ -1273,7 +1251,7 @@ end;
 
 // Properties ------------------------------------------------------------------
 // Retrieve the number of line endings encountered
-function ASourceLineEndingToken.lineCount: longword;
+function ALineEndingTokenFromSource.lineCount: longword;
 
 begin
   result := myLineCount;

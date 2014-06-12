@@ -50,7 +50,7 @@ type ABinaryTreeIterator = class(AnIterator)
     function init: boolean; override;
 
     { Determine whether or not there are more nodes over which to iterate.
-      For more information on this routine, see @link(CanIterate.continues).
+      For more information on this routine, see @link(AnIterator.continues).
     }
     function continues: boolean; override;
 
@@ -64,7 +64,7 @@ type ABinaryTreeIterator = class(AnIterator)
     { Construct a shallow copy of the other object.
 
       This method overrides the behavior inherited from
-      @link(AnObect.shallowCopyFrom): it calls that method, then checks to see
+      @link(AnObject.shallowCopyFrom): it calls that method, then checks to see
       whether @code(Other) is an instance of @link(ABinaryTreeIterator).  If so,
       it copies the values of
       @unorderedList(

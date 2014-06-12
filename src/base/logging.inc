@@ -39,8 +39,8 @@ type ALog = class(APrintingObject)
     { Construct a new instance of @link(ALog) that will output status messages
       and errors to the given stream.
 
-      If @link(ownStream) is @true, then the log will assume ownership of
-      @link(Dest) and will free it when it is, itself, freed.  This allows
+      If @code(ownStream) is @true, then the log will assume ownership of
+      @code(Dest) and will free it when it is, itself, freed.  This allows
       instances of a log to be constructed and assigned to a stream like so:
       @longcode(#
         // Log to 'stdout'
@@ -92,10 +92,10 @@ type ALog = class(APrintingObject)
     { Print a string representation of the log to the specified stream.
 
       This method does not actually print a string representation of the log
-      itself; rather, it calls @link(ACounterList.printTo) on its list of
-      counters.  @code(prefix) and @code(suffix) are passed to that routine
-      and are not used by this one.  This behavior ensures that a summary of
-      all logged items is printed every time this method is called.
+      itself; rather, it calls @link(ABinaryTree.printTo ACounterList.printTo)
+      on its list of counters.  @code(prefix) and @code(suffix) are passed to
+      that routine and are not used by this one.  This behavior ensures that a
+      summary of all logged items is printed every time this method is called.
 
       @return(The total number of bytes printed to @code(Dest).)
     }

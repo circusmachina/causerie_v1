@@ -20,7 +20,7 @@
 { This class is defined for convenience and need not be used, strictly speaking,
   since instances of @link(ASourceScanner) will happily accept any valid
   instance of @link(ATextInputStream) or its descendants.  However, this class
-  overrides @link(AStream.iterate) to make the construction of a source scanner
+  overrides @link(AStream.Iterator) to make the construction of a source scanner
   for a given source stream more convenient.  It retains a reference to a
   language definition, which is automatically passed to the scanner it creates,
   and it defines a constructor to make wrapping another stream convenient.
@@ -40,7 +40,7 @@ type ASourceInputStream = class(ATextInputStream)
 
       The language specified by @code(ThisLanguage) will be saved and passed
       along to the instance of @link(ASourceScanner) created when
-      @link(ASourceInputStream.iterate) is called.
+      @link(ASourceInputStream.Iterator) is called.
     }
     constructor using(const ThisLanguage: AParsedLanguage;
       const ThisTarget: AStream; const takeOwnershipOfTarget: boolean = true);
@@ -58,7 +58,7 @@ type ASourceInputStream = class(ATextInputStream)
       along the value of @link(ASourceInputStream.Language).  The caller is
       responsible for freeing the scanner when it is no longer required.
     }
-    function iterator: AnIterator; override;
+    function Iterator: AnIterator; override;
 
     // Properties --------------------------------------------------------------
     { Retrieve the language definition associated with the source stream.
@@ -96,10 +96,10 @@ end;
 
 // CanIterate implementation ---------------------------------------------------
 // Construct and return a scanner for the source
-function ASourceInputStream.iterator: AnIterator;
+function ASourceInputStream.Iterator: AnIterator;
 
 begin
-  Result := ASourceScanner.over(Self, MyLanguage);
+  Result := ASourceScanner.forSource(Self, MyLanguage);
 end;
 
 // Properties ------------------------------------------------------------------
