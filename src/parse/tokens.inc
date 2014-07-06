@@ -110,6 +110,14 @@ type AToken = class(ANode)
     }
     function shallowCopyFrom(const Other: AnObject): boolean; override;
 
+    { Calculate the number of bytes required to stream the token.
+
+      This method overrides the behavior inherited from
+      @link(ANode.selfStreamingLength).  It returns the number of bytes required
+      to stream the value of @link(AToken.opcode).
+    }
+    function selfStreamingLength: TStreamIOSize; override;
+
     { Write the token, and just the token, to the specified intermediate code
       stream.
 
@@ -231,6 +239,15 @@ type ASymbolicToken = class(AToken)
     }
     function shallowCopyFrom(const Other: AnObject): boolean; override;
 
+    { Calculate the number of bytes required to stream the token.
+
+      This method builds upon the behavior inherited from
+      @link(AToken.selfStreamingLength): it calls that routine, then adds the
+      number of bytes required to stream the value of
+      @link(ASymbolicToken.symbol).
+    }
+    function selfStreamingLength: TStreamIOSize; override;
+
     { Write the token, and just the token, to the specified stream.
 
       This method builds upon the behavior inherited from @link(AToken).  It
@@ -267,7 +284,7 @@ type ASymbolicToken = class(AToken)
     { Retrieve the token scope, which refers to the symbol list to which the
       symbol belongs.  A given source program may have one or more symbol
       lists, which are indexed within an instance of
-      @link(ASymbolTableDictionary).
+      @link(ASymbolVectorVector).
 
       General practice is to define a few global symbol lists: one for all
       string literals, one for all numeric constants, and one for all types; as
@@ -306,6 +323,15 @@ type ALineEndingToken = class(AToken)
       @code(Other) belongs, if any, but the caller is free to do so.
     }
     function shallowCopyFrom(const Other: AnObject): boolean; override;
+
+    { Calculate the number of bytes required to stream the token.
+
+      This method builds upon the behavior inherited from
+      @link(AToken.selfStreamingLength): it calls that routine, then adds
+      the number of bytes required to stream the value of
+      @link(ALineEndingToken.lineCount).
+    }
+    function selfStreamingLength: TStreamIOSize; override;
 
     { Write the token, and just the token, to the given stream.
       This method builds upon the behavior inherited from @link(AToken).  It
@@ -524,6 +550,17 @@ begin
   end;
 end;
 
+// Calculate the number of bytes required to stream the token
+function AToken.selfStreamingLength: TStreamIOSize;
+
+begin
+  // Call the inherited routine
+  result := inherited selfStreamingLength;
+
+  // Add ourselves
+  inc(result, sizeof(myOpcode));
+end;
+
 // Write the token to the given intermediate code stream
 function AToken.writeSelfTo(const Dest: AStream): TStreamIOSize;
 
@@ -628,6 +665,17 @@ begin
   end;
 end;
 
+// Calculate the number of bytes required to stream the token
+function ASymbolicToken.selfStreamingLength: TStreamIOSize;
+
+begin
+  // Call the inherited routine
+  result := inherited selfStreamingLength;
+
+  // Add ourselves
+  inc(result, sizeof(mySymbol));
+end;
+
 // Write the token to the given stream
 function ASymbolicToken.writeSelfTo(const Dest: AStream): TStreamIOSize;
 
@@ -707,6 +755,17 @@ begin
   begin
     myLineCount := ALineEndingToken(Other).lineCount;
   end;
+end;
+
+// Calculate the number of bytes required to stream the token
+function ALineEndingToken.selfStreamingLength: TStreamIOSize;
+
+begin
+  // Call the inherited routine
+  result := inherited selfStreamingLength;
+
+  // Add ourselves
+  inc(result, sizeof(myLineCount));
 end;
 
 // Write just the token to a given stream

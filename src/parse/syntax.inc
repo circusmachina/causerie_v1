@@ -167,11 +167,22 @@ type ASyntaxRule = class(AStringLeaf)
     }
     function shallowCopyFrom(const Other: AnObject): boolean; override;
 
+    { Calculate the number of bytes required to stream the rule, and just the
+      rule.
+
+      This method builds upon the behavior inherited from
+      @link(AStringLeaf.selfStreamingLength): it calls the inherited routine,
+      then adds the number of bytes required to store
+      @link(ASyntaxRule.census Self.census) and the opcodes themselves.
+    }
+    function selfStreamingLength: TStreamIOSize; override;
+
     { Write the rule, and just the rule, to the specified stream.
 
-      This method writes the value of @code(Self.census) to @code(Dest),
-      followed by the opcodes belonging to the rule, then calls the inherited
-      routine.
+      This method builds upon the behavior inherited from
+      @link(AStringLeaf.writeSelfTo): it first calls the inherited routine, then
+      writes the value of @link(ASyntaxRule.census Self.census) to @code(Dest)
+      followed by the opcodes belonging to the rule.
 
       @return(The total number of bytes written to @code(Dest).)
     }
@@ -180,8 +191,10 @@ type ASyntaxRule = class(AStringLeaf)
     // CanStream implementation ------------------------------------------------
     { Read the rule from the specified stream.
 
-      This method reads the number of opcodes to retrieve from the stream,
-      the reads the opcodes themselves before calling the inherited routine.
+      This method builds upon the behavior inherited from
+      @link(AStringLeaf.readFrom): it first calls the inherited routine, then
+      reads the number of opcodes to retrieve from the stream and the opcodes
+      themselves.
 
       @return(The total number of bytes read from @code(Source).)
     }
@@ -211,6 +224,40 @@ type ASyntaxRuleset = class(AStringTree)
   public
     // Initializer
     function init: boolean; override;
+
+    { Add the given rule to the ruleset.
+
+      This method simply calls @link(ABinaryTree.addLeaf) on itself and returns
+      the result.  It is defined for convenience.
+    }
+    function addRule(const ThisRule: ASyntaxRule;
+      const freeOnFailure: boolean = false): boolean; virtual;
+
+    { Add a rule with the specified sort key to the ruleset.
+
+      This method constructs an instance of @link(ASyntaxRule) that is
+      identified by @code(thisKey) by calling @link(ASyntaxRule.withSortKey).
+      It then attempts to add the rule to the ruleset by calling
+      @link(ASyntaxRuleset.addRule) on @code(Self).
+
+      @return(@true if the new rule was successfully created and inserted;
+      @false if not).
+    }
+    function addNewRule(const thisKey: TSortKey;
+      const thisList: array of TOpcode): boolean; virtual;
+
+    { Add a rule with the given name to the ruleset.
+
+      This method constructs an instance of @link(ASyntaxRule) that is named
+      @code(thisKey) by calling @link(ASyntaxRule.named).  It then attempts to
+      add the rule to the ruleset by calling
+      @link(ABinaryTree.addLeaf ASyntaxRuleset.addLeaf) on @code(Self).
+
+      @return(@true if the new rule was successfully created and inserted;
+      @false if not).
+    }
+    function addNewRule(const thisKey: string;
+      const thisList: array of TOpcode): boolean; virtual;
 
     // Properties --------------------------------------------------------------
     { Retrieve a reference to the rule with the specified sort key.
@@ -472,6 +519,18 @@ begin
   end;
 end;
 
+// Calculate the number of bytes required to stream the rule
+function ASyntaxRule.selfStreamingLength: TStreamIOSize;
+
+begin
+  // Call the inherited routine
+  result := inherited selfStreamingLength;
+
+  // Include ourselves
+  inc(result,
+    sizeof(longint) + (System.length(myComponents) * sizeof(TOpcode)));
+end;
+
 // Write the rule, and just the rule, to the specified stream
 function ASyntaxRule.writeSelfTo(const Dest: AStream): TStreamIOSize;
 
@@ -484,15 +543,15 @@ begin
 
   if Dest <> nil then
   begin
+    result := inherited writeSelfTo(Dest);
+
     // Write the total number of components in the rule
     myLength := Self.census;
-    result := Dest.write(sizeof(myLength), myLength);
+    result := result + Dest.write(sizeof(myLength), myLength);
 
     // Write the components themselves
     result := result + Dest.write(myLength * sizeof(TOpcode), myComponents[0]);
   end;
-
-  result := result + inherited writeSelfTo(Dest);
 end;
 
 // CanStream implementation ----------------------------------------------------
@@ -510,9 +569,11 @@ begin
 
   if Source <> nil then
   begin
+    result := inherited readFrom(Source);
+
     // Read the total number of components from the stream
     opcodeCount := 0;
-    result := Source.read(sizeof(opcodeCount), opcodeCount);
+    result := result + Source.read(sizeof(opcodeCount), opcodeCount);
 
     System.setLength(newComponents, opcodeCount);
 
@@ -526,8 +587,6 @@ begin
       System.setLength(newComponents, 0);
     end;
   end;
-
-  result := result + inherited readFrom(Source);
 end;
 
 // Properties ------------------------------------------------------------------
@@ -556,6 +615,52 @@ begin
   begin
     MyLeafType := ASyntaxRule;
   end;
+end;
+
+// Add a syntax rule to the ruleset
+function ASyntaxRuleset.addRule(const ThisRule: ASyntaxRule;
+  const freeOnFailure: boolean = false): boolean;
+
+begin
+  result := Self.addLeaf(ThisRule, freeOnFailure);
+end;
+
+// Add a new syntax rule to the ruleset
+function ASyntaxRuleset.addNewRule(const thisKey: TSortKey;
+  const thisList: array of TOpcode): boolean;
+
+var
+  // Refers to the new rule
+  NewRule: ASyntaxRule;
+
+begin
+  result := false;
+
+  NewRule := ASyntaxRule.withSortKey(thisKey, thisList);
+  if NewRule = nil then
+    exit;
+
+  // Attempt to add the rule, and free it on failure
+  result := Self.addRule(NewRule, true);
+end;
+
+// Add a new syntax rule to the ruleset
+function ASyntaxRuleset.addNewRule(const thisKey: string;
+  const thisList: array of TOpcode): boolean;
+
+var
+  // Refers to the new rule
+  NewRule: ASyntaxRule;
+
+begin
+  result := false;
+
+  NewRule := ASyntaxRule.named(thisKey, thisList);
+  if NewRule = nil then
+    exit;
+
+  // Attempt to add the rule, and free it on failure
+  result := Self.addRule(NewRule, true);
 end;
 
 // Properties ------------------------------------------------------------------

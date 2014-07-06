@@ -76,12 +76,22 @@ type ADictionaryEntry = class(AStringLeaf)
     }
     function shallowCopyFrom(const Other: AnObject): boolean; override;
 
+    { Calculate the number of bytes required to stream the node, and just the
+      node.
+
+      This method builds upon the behavior inherited from
+      @link(AStringLeaf.selfStreamingLength): it calls the inherited method,
+      then adds the number of bytes required to store an instance of
+      @code(TVarData).
+    }
+    function selfStreamingLength: TStreamIOSize; override;
+
     { Write the node, and just the node, to the specified stream.
 
-      This method writes the value of the entry by converting it to an
-      instance of @code(TVarData) before writing it to @code(Dest).  It then
-      calls the inherited routine, @link(AStringLeaf.writeSelfTo), which
-      ensures the name of the entry is written as well.
+      This method builds upon the behavior inherited from
+      @link(AStringLeaf.writeSelfTo): it first calls the inherited routine,
+      then writes the value of the entry by converting it to an instance of
+      @code(TVarData).
 
       @return(The total number of bytes written to @code(Dest).)
     }
@@ -90,10 +100,10 @@ type ADictionaryEntry = class(AStringLeaf)
   // CanStream implementation --------------------------------------------------
     { Read the node from the specified stream.
 
-      This method reads the value of the entry by treating it as an instance of
-      @code(TVarData) when reading it from @code(Source).  It then calls the
-      inherited routine, @link(AStringLeaf.readFrom), which ensures that the
-      name of the entry is read as well.
+      This method builds upon the behavior inherited from
+      @link(AStringLeaf.readFrom): it calls the inherited routine first, then
+      reads the value of the entry by treating it as an instance of
+      @code(TVarData) when reading it from @code(Source).
 
       @return(The total number of bytes read from @code(Source).)
     }
@@ -268,7 +278,7 @@ type ADictionary = class(ABinaryTree)
     function add(const thisKey: string;
       const thisValue: Variant): ADictionaryEntry; reintroduce; virtual;
 
-    // IsPrintable implementation ----------------------------------------------
+    // CanPrint implementation -------------------------------------------------
     { Construct and return a string representation of the dictionary and its
       entries.
 
@@ -436,6 +446,17 @@ begin
   end;
 end;
 
+// Calculate the number of bytes required to stream the node
+function ADictionaryEntry.selfStreamingLength: TStreamIOSize;
+
+begin
+  // Call the inherited routine
+  result := inherited selfStreamingLength;
+
+  // Include ourselves
+  inc(result, sizeof(TVarData));
+end;
+
 // Write the node, and just the node, to the specified stream
 function ADictionaryEntry.writeSelfTo(const Dest: AStream): TStreamIOSize;
 
@@ -443,9 +464,10 @@ begin
   result := 0;
 
   if Dest <> nil then
-    result := Dest.write(sizeof(TVarData), TVarData(myValue));
-
-  result := result + inherited writeSelfTo(Dest);
+  begin
+    result := inherited writeSelfTo(Dest);
+    result := result + Dest.write(sizeof(TVarData), TVarData(myValue));
+  end;
 end;
 
 // CanStream implementation ----------------------------------------------------
@@ -460,9 +482,10 @@ begin
   result := 0;
 
   if Source <> nil then
-    result := Source.read(sizeof(TVarData), TVarData(myValue));
-
-  result := result + inherited readFrom(Source);
+  begin
+    result := inherited readFrom(Source);
+    result := result + Source.read(sizeof(TVarData), TVarData(myValue));
+  end;
 end;
 
 // CanPrint implementation -----------------------------------------------------
@@ -755,7 +778,7 @@ begin
   end;
 end;
 
-// IsPrintable implementation --------------------------------------------------
+// CanPrint implementation -----------------------------------------------------
 {* Constructs a string representation of the dictionary.  This routine first
    calls ADictionary.implode() to obtain a string representation of the
    dictionary and its entries.

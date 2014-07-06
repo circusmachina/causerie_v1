@@ -184,8 +184,21 @@ type Charstring = class
 
         If @code(needle) is not found, then this routine returns zero (0).
       }
-      class function pos(const needle, haystack: string;
+      class function positionOf(const needle, haystack: string;
         startPos: integer = 1): integer;
+
+      { Find the last occurrence of @code(needle) in @code(haystack), optionally
+        starting at the spcified character offset.
+
+        This method calls @code(LazUtf8.utf8Pos).  If @code(needle) is found,
+        the character offset of its location within @code(haystack) is returned.
+        The last character of @code(haystack) will always be at position
+        @code(Charstring.census).
+
+        If @code(needle) is not found, then this routine returns zero (0).
+      }
+      class function lastPositionOf(const needle, haystack: string;
+        startPos: integer = 0): integer;
 
       { Determines whether @code(s) ends with the string specified by
         @code(ending).
@@ -415,7 +428,7 @@ begin
 end;
 
 // Find a substring within the given string
-class function Charstring.pos(const needle, haystack: string;
+class function Charstring.positionOf(const needle, haystack: string;
   startPos: integer = 1): integer;
 
 begin
@@ -439,6 +452,41 @@ begin
   result := LazUtf8.utf8Pos(needle, haystack, startPos);
 end;
 
+// Find the last occurrence of a substring within the given string
+class function Charstring.lastPositionOf(const needle, haystack: string;
+  startPos: integer = 0): integer;
+
+begin
+  result := 0;
+
+  if (needle = '') or (haystack = '') then
+    exit;
+
+  // Deal with negative indices
+  if startPos < 0 then
+    inc(startPos, Charstring.census(haystack) + 1);
+
+  if startPos < 0 then
+    startPos := 0;
+
+  // Deal with an invalid starting offset
+  if (startPos = 0) or (startPos > Charstring.census(haystack)) then
+    startPos := Charstring.census(haystack);
+
+  // Find the last occurrence
+  repeat
+    startPos := LazUtf8.utf8Pos(needle, haystack, startPos);
+
+    // If the occurrence was not found, then exit the loop
+    if startPos <= 0 then
+      break;
+
+    result := startPos;
+    // Search again
+    inc(startPos);
+  until false;
+end;
+
 // Determines whether the given string has the given ending
 class function Charstring.endsWith(const s: string;
   const ending: string): boolean;
@@ -448,7 +496,7 @@ begin
 
   if (ending <> '') and (s <> '') then
     result :=
-      (Self.pos(ending, s) = (Charstring.census(s) - Charstring.census(ending)));
+      (Self.positionOf(ending, s) = (Charstring.census(s) - Charstring.census(ending)));
 end;
 
 /// Replaces the specified ending with another
@@ -499,7 +547,7 @@ begin
     exit;
 
   for i := 1 to Charstring.census(s) do
-    if Self.pos(Self.character(s, i), charsUppercaseLetters) > 0 then
+    if Self.positionOf(Self.character(s, i), charsUppercaseLetters) > 0 then
       exit;
 
   result := true;

@@ -63,9 +63,10 @@ type AParser = class(AnObject)
     { Parse the source.
 
       The base definition of this method does nothing more than check to
-      ensure that @link(AParser.Source) and @link(AParser.Log) are both
-      valid pointers.  Descendant classes may call this routine before
-      performing their own checks and parsing the specified source.
+      ensure that @link(AParser.Source), @link(AParser.Log), and
+      @link(AParser.Tokens) are all valid references (not @nil).  Descendant
+      classes may call this routine before performing their own checks and
+      parsing the specified source.
 
       @return(A negative value if an error has occurred before any parsing
       was done.  This will most likely occur if either @link(AParser.Source) or
@@ -316,8 +317,8 @@ end;
   parsFatalUnexpectedEOS = 'unexpected end of source';
 
   { This constant defines the format of the error message logged by instances of
-    @link(ASourceParser) when @link(ASourceParser.resyncToToken) and
-    @link(ASourceParser.resyncTo) encounter an unexpected token in the source.
+    @link(AParser) when @link(AParser.resyncToToken) and
+    @link(AParser.resyncTo) encounter an unexpected token in the source.
 
     The string placeholder is filled with a string representation of the
     unexpected token, as returned by a call to @link(AToken.toString).
@@ -348,11 +349,7 @@ begin
     MyScanner := nil;
     MySource := nil;
     MyLog := nil;
-
-    // Construct a token list to manage tokens parsed from the source
-    MyTokens := ATokenList.new;
-
-    result := MyTokens <> nil;
+    MyTokens := nil;
   end;
 end;
 
@@ -377,7 +374,11 @@ function AParser.parse: int64;
 begin
   result := -1;
 
-  if (MySource <> nil) and (MyLog <> nil) then
+    // Construct a token list to manage tokens parsed from the source
+  if MyTokens = nil then
+    MyTokens := ATokenList.new;
+
+  if (MySource <> nil) and (MyLog <> nil) and (MyTokens <> nil) then
     result := 0;
 end;
 

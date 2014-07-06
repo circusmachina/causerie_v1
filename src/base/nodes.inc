@@ -145,6 +145,14 @@ type ANode = class(APrintingObject, CanStream)
     }
     procedure freeChildren; virtual;
 
+    { Calculate the number of bytes that will be read from or written to a
+      stream when the node, and just the node, is read or written.
+
+      Descendant classes should first call this method, then add to the value
+      returned.
+    }
+    function selfStreamingLength: TStreamIOSize; virtual;
+
     { Write the node, and just the node, to the specified stream.
 
       This method is called automatically by @link(ANode.writeTo).  It is
@@ -191,6 +199,25 @@ type ANode = class(APrintingObject, CanStream)
       suffix: AnsiString = ''): TStreamIOSize; virtual;
 
     // CanStream implementation ------------------------------------------------
+    { Calculate the total number of bytes that will be read or written when
+      either @link(ANode.readFrom) or @link(ANode.writeTo) is called.
+
+      This method will first call itself on the immediate older sibling of the
+      node, which will do the same until the first node is encountered.  That
+      node will calculate the value for itself and its children, and then the
+      recursion will proceed back down the list to the current node, ensuring
+      that each node and its children are included in the final calculation.
+
+      This method does not actually calculate the size of the the node itself;
+      instead, it calls @link(ANode.selfStreamingLength), which is responsible
+      for calculating the streaming size of the current node.
+
+      This method can be called on the youngest node in a list of nodes and it
+      will return with the total number of bytes required to stream the entire
+      list.
+    }
+    function streamingLength: TStreamIOSize; virtual;
+
     { Write the node, its children, and its older siblings to the specified
       stream.
 
@@ -653,6 +680,13 @@ begin
   end;
 end;
 
+// Calculate the number of bytes required to stream just the current node
+function ANode.selfStreamingLength: TStreamIOSize;
+
+begin
+  result := sizeof(myChildCount);
+end;
+
 // Stream the node, and just the node, to the specified stream
 function ANode.writeSelfTo(const Dest: AStream): TStreamIOSize;
 
@@ -670,6 +704,24 @@ begin
 end;
 
 // CanStream implementation ----------------------------------------------------
+// Calculate the streaming length of the node, its children, and older siblings
+function ANode.streamingLength: TStreamIOSize;
+
+begin
+  result := 0;
+
+  // Calculate older siblings first
+  if MyPrevious <> nil then
+    inc(result, MyPrevious.streamingLength);
+
+  // Calculate ourselves
+  inc(result, Self.selfStreamingLength);
+
+  // Calculate our children
+  if MyChild <> nil then
+    inc(result, MyChild.streamingLength);
+end;
+
 // Write the node, its children, and its older siblings to the specified stream
 function ANode.writeTo(const Dest: AStream): TStreamIOSize;
 

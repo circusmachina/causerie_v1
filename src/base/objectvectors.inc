@@ -18,19 +18,25 @@
 }
 {$IFDEF ReadInterface}
 { This class represents an array that contains references to objects:
-  descendants of @code(TObject).  Although it is assumed that all of the objects
-  in the array will be of the same class, this is not required.
+  descendants of @link(AnObject).  Although it is assumed that all of the
+  objects in the array will be of the same class, this is not required.
 
   As with its parent, instances of @link(AnObjectVector) can dynamically grow
-  as needed and can write themselves to arbitrary streams.  However, the base
-  implementation of @link(AnObjectVector) cannot read its contents from a
-  stream since it provides no method to identify which objects should be
-  constructed.  It is assumed that you will derive a descendant of
-  @link(AnObjectVector) to handle reading the contents of the vector from a
-  stream.
+  as needed and can write themselves to arbitrary streams.  The base
+  implementation of @link(AnObjectVector) cannot successfully read its contents
+  from a stream since the value of @link(AnObjectVector.ObjectType) refers to
+  @link(AnObject).  Descendant classes that wish to make use of the base
+  implementation of @link(AnObjectVector.readFrom) should override
+  @link(AnObjectVector.init) and set the value of
+  @link(AnObjectVector.ObjectType) to refer to the class of objects that will
+  be read from the stream; alternatively, descendant classes may override
+  @link(AnObjectVector.readFrom) to provide their own means of determining
+  which classes to construct and insert into the vector.
 }
 type AnObjectVector = class(APointerVector)
   protected
+    { Refers to the type of object managed by the vector }
+    MyObjectType: AnObjectClass;
     { Indicates whether the vector owns the objects it contains }
     myOwnObjects: boolean;
 
@@ -52,7 +58,7 @@ type AnObjectVector = class(APointerVector)
 
       This method calls @link(APointerVector.pushReference).
     }
-    procedure pushObject(const ThisObject: TObject); virtual;
+    procedure pushObject(const ThisObject: AnObject); virtual;
 
     { Append an object to the array.
 
@@ -64,7 +70,7 @@ type AnObjectVector = class(APointerVector)
 
       This method calls @link(APointerVector.appendReference).
     }
-    function appendObject(const ThisObject: TObject): longword; virtual;
+    function appendObject(const ThisObject: AnObject): longword; virtual;
 
     { Pop the last object from the array and return it to the caller.
 
@@ -72,7 +78,7 @@ type AnObjectVector = class(APointerVector)
 
       This method calls @link(APointerVector.popReference).
     }
-    function PopObject: TObject; virtual;
+    function PopObject: AnObject; virtual;
 
     { Insert the specified object at the specified index within the array.
 
@@ -86,7 +92,7 @@ type AnObjectVector = class(APointerVector)
       This method calls @link(APointerVector.insertReferenceAt).
     }
     procedure insertObjectAt(const thisIndex: longword;
-      const ThisObject: TObject); virtual;
+      const ThisObject: AnObject); virtual;
 
     { Remove the object at the specified index and return it to the caller.
 
@@ -98,7 +104,7 @@ type AnObjectVector = class(APointerVector)
 
       This method calls @link(APointerVector.removeReferenceAt).
     }
-    function RemoveObjectAt(const thisIndex: longword): TObject; virtual;
+    function RemoveObjectAt(const thisIndex: longword): AnObject; virtual;
 
     { Delete the object at the specified index.
 
@@ -127,7 +133,7 @@ type AnObjectVector = class(APointerVector)
 
       This method calls @link(APointerVector.referenceAt).
     }
-    function ObjectAt(const thisIndex: longword): TObject; virtual;
+    function ObjectAt(const thisIndex: longword): AnObject; virtual;
 
     { Set the object at the specified index.
 
@@ -142,9 +148,20 @@ type AnObjectVector = class(APointerVector)
       the array has no objects, then this method does nothing but return @nil.
     }
     function SetObjectAt(const thisIndex: longword;
-      const ThisObject: TObject): TObject; virtual;
+      const ThisObject: AnObject): TObject; virtual;
 
     // CanStream implementation ------------------------------------------------
+    { Calculate the number of bytes required to stream the vector.
+
+      This method overrides the behavior inherited from
+      @link(AVector.streamingLength): it queries the contents of the array to
+      determine which objects support streaming and only those objects that
+      implement @link(CanStream) will be included in the count.  It then adds
+      the size of @link(AVector.length) and returns the final value to the
+      caller.
+    }
+    function streamingLength: TStreamIOSize; override;
+
     { Write the array and its contents to the specified stream.
 
       This method overrides the behavior inherited from @link(AVector.writeTo):
@@ -162,10 +179,17 @@ type AnObjectVector = class(APointerVector)
     { Read the array and its contents from the specified stream.
 
       This method overrides the behavior inherited from @link(AVector.readFrom):
-      it does nothing and returns zero.  The array provides no mechanism for
-      reliably recording which classes to construct and use in order to read
-      objects and their data from the stream; it is assumed that descendant
-      classes will implement this behavior if it is desired.
+      it reads the number of elements from the stream, then constructs instances
+      of @link(AnObjectVector.ObjectType) to read each element from the stream.
+      These instances are then inserted into the vector.
+
+      If @link(AnObjectVector.ObjectType) does not support the @link(CanStream)
+      interface, then this method will only read the number of elements in the
+      stream before returning.
+
+      Descendant classes may override this method where more complex behavior
+      is needed -- for instance, when there are many types of objects to be
+      read from the stream.
 
       @return(The total number of bytes read from @code(Source).)
     }
@@ -189,6 +213,15 @@ type AnObjectVector = class(APointerVector)
       suffix: AnsiString = ''): TStreamIOSize; override;
 
     // Properties --------------------------------------------------------------
+    { Obtain a reference to the type of object that is managed by the vector.
+      Strictly speaking, of course, the vector can manage any descendant of
+      @link(AnObject) and they need not all be the same; however, in those cases
+      where the objects contained by the vector @italic(are) all of the same
+      type, this value allows the vector to construct instances of that type on
+      the fly.
+    }
+    function ObjectType: AnObjectClass; virtual;
+
     { Determine whether or not the vector assumes ownership of the objects that
       it contains.
 
@@ -217,7 +250,7 @@ end;
 {$ENDIF}
 {$IFDEF ReadImplementation}
 // A pointer to an instance of an object
-type PObject = ^TObject;
+type PAnObject = ^AnObject;
 
 // Initializer
 function AnObjectVector.init: boolean;
@@ -227,6 +260,8 @@ begin
 
   if result then
   begin
+    // By default, we manage instances of AnObject
+    MyObjectType := AnObject;
     // We do not automatically assume ownership of objects
     myOwnObjects := false;
   end;
@@ -237,7 +272,7 @@ destructor AnObjectVector.destroy;
 
 var
   // Points to an object reference
-  MyObjects: PObject;
+  MyObjects: PAnObject;
   // Loop counter
   i: longword;
 
@@ -257,39 +292,39 @@ begin
 end;
 
 // Push an object onto the end of the array
-procedure AnObjectVector.pushObject(const ThisObject: TObject);
+procedure AnObjectVector.pushObject(const ThisObject: AnObject);
 
 begin
   Self.pushReference(ThisObject);
 end;
 
 // Append an object to the end of the array and return its index
-function AnObjectVector.appendObject(const ThisObject: TObject): longword;
+function AnObjectVector.appendObject(const ThisObject: AnObject): longword;
 
 begin
   result := Self.appendReference(ThisObject);
 end;
 
 // Pop an object from the end of the array
-function AnObjectVector.PopObject: TObject;
+function AnObjectVector.PopObject: AnObject;
 
 begin
-  Result := TObject(Self.popReference);
+  Result := AnObject(Self.popReference);
 end;
 
 // Insert an object into the array at the specified index
 procedure AnObjectVector.insertObjectAt(const thisIndex: longword;
-  const ThisObject: TObject);
+  const ThisObject: AnObject);
 
 begin
   Self.insertReferenceAt(thisIndex, ThisObject);
 end;
 
 // Remove and return the object at the specified index
-function AnObjectVector.RemoveObjectAt(const thisIndex: longword): TObject;
+function AnObjectVector.RemoveObjectAt(const thisIndex: longword): AnObject;
 
 begin
-  Result := TObject(Self.removeReferenceAt(thisIndex));
+  Result := AnObject(Self.removeReferenceAt(thisIndex));
 end;
 
 // Delete the object at the specified index
@@ -297,10 +332,10 @@ procedure AnObjectVector.deleteObjectAt(const thisIndex: longword);
 
 var
   // Refers to the object in question
-  ThisObject: TObject;
+  ThisObject: AnObject;
 
 begin
-  ThisObject := TObject(Self.RemoveObjectAt(thisIndex));
+  ThisObject := AnObject(Self.RemoveObjectAt(thisIndex));
 
   // Free the object
   if ThisObject <> nil then
@@ -308,21 +343,45 @@ begin
 end;
 
 // Retrieve a reference to the object at the specified index
-function AnObjectVector.ObjectAt(const thisIndex: longword): TObject;
+function AnObjectVector.ObjectAt(const thisIndex: longword): AnObject;
 
 begin
-  Result := TObject(Self.referenceAt(thisIndex));
+  Result := AnObject(Self.referenceAt(thisIndex));
 end;
 
 // Set the object reference at the specified index
 function AnObjectVector.SetObjectAt(const thisIndex: longword;
-  const ThisObject: TObject): TObject;
+  const ThisObject: AnObject): TObject;
 
 begin
-  Result := TObject(Self.setReferenceAt(thisIndex, ThisObject));
+  Result := AnObject(Self.setReferenceAt(thisIndex, ThisObject));
 end;
 
 // CanStream implementation ----------------------------------------------------
+// Calculate the number of bytes required to stream the vector
+function AnObjectVector.streamingLength: TStreamIOSize;
+
+var
+  // Refers to the list of objects
+  MyObjects: PAnObject;
+  // Loop counter
+  i: longword;
+
+begin
+  result := sizeof(myLength);
+
+  // Determine the number of objects that support streaming
+  if (myBuffer <> nil) and (myLength > 0) then
+  begin
+    MyObjects := @myBuffer[0];
+
+    for i := 0 to (myLength - 1) do
+      if (MyObjects[i] <> nil) and (MyObjects[i] is CanStream) then
+        with MyObjects[i] as CanStream do
+          inc(result, streamingLength)
+  end;
+end;
+
 // Write the array and its contents to the specified stream
 function AnObjectVector.writeTo(const Dest: AStream): TStreamIOSize;
 
@@ -330,7 +389,7 @@ var
   // Stores the number of streaming objects that will be written to the stream
   streamingObjectCount: longword;
   // Refers to the list of objects
-  MyObjects: PObject;
+  MyObjects: PAnObject;
   // Loop counter
   i: longword;
 
@@ -360,14 +419,39 @@ begin
     for i := 0 to (myLength - 1) do
       if (MyObjects[i] <> nil) and (MyObjects[i] is CanStream) then
         with MyObjects[i] as CanStream do
-          result := result + writeTo(Dest);
+          inc(result, writeTo(Dest));
 end;
 
 // Read the array and its contents from a stream -- does nothing here
 function AnObjectVector.readFrom(const Source: AStream): TStreamIOSize;
 
+var
+  // Stores the number of elements in the stream
+  streamObjectCount: longword;
+  // Refers to a new object created from the stream
+  NewObject: AnObject;
+
 begin
   result := 0;
+
+  if Source = nil then
+    exit;
+
+  // Read the number of objects that support streaming
+  streamObjectCount := 0;
+  result := Source.read(sizeof(streamObjectCount), streamObjectCount);
+
+  // Read each object, but only if our object class supports streaming
+  if MyObjectType.implements('CanStream') then
+    while streamObjectCount > 0 do
+    begin
+      NewObject := MyObjectType.new;
+
+      with NewObject as CanStream do
+        result := result + readFrom(Source);
+
+      Self.pushObject(NewObject);
+    end;
 end;
 
 // CanPrint implementation -----------------------------------------------------
@@ -380,7 +464,7 @@ var
   // Loop counter
   i: longword;
   // Refers to the array of objects
-  MyObjects: PObject;
+  MyObjects: PAnObject;
 
 begin
   result := 0;
@@ -416,6 +500,13 @@ begin
 end;
 
 // Properties ------------------------------------------------------------------
+// Retrieve the type of object managed by the vector
+function AnObjectVector.ObjectType: AnObjectClass;
+
+begin
+  Result := MyObjectType;
+end;
+
 // Determine whether or not the vector owns its objects
 function AnObjectVector.ownsObjects: boolean;
 

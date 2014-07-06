@@ -239,11 +239,11 @@ type AParsedLanguage = class(AnObject)
     { Define the character categories used by the language.
 
       This method should be overriden by descendant classes.  It is called
-      automatically by the constructor.  Descendant classes should use the
-      method to define which characters belong in the various character
-      categories; this allows a tokenizer that references the language to
-      determine what type of token to create when a given character is
-      encountered.
+      automatically by the constructor.  Descendant classes should first call
+      the inherited routine, then use the method to define which characters
+      belong in the various character categories; this allows a tokenizer that
+      references the language to determine what type of token to create when a
+      given character is encountered in the source.
 
       The base implementation of this routine simply sets all character
       category strings to empty strings.
@@ -264,14 +264,20 @@ type AParsedLanguage = class(AnObject)
 
     { Define the rules used by the language.
 
-      This method should be implemented by descendant classes.  It is called
+      This method should be overriden by descendant classes.  It is called
       automatically by the constructor.  Descendant classes should use the
       method to establish syntax rules for the language.  This allows
       @link(AParsedLanguage.SyntaxRule) to return the rule required by a
       parser that needs to determine if a specific token is allowed to be
       positioned where it is found in the source.
+
+      The base implementation of this routine creates two default, empty rules:
+      @link(RULE4_BEGINNING_STATEMENTS) and @link(RULE4_ENDING_STATEMENTS).  If
+      these two rules are desired in a given language implementation, then
+      descendant classes should call the inherited routine before installing
+      their own rules.
     }
-    procedure defineRules; virtual; abstract;
+    procedure defineRules; virtual;
 
   public
     { Construct a new instance of the language.  You will likely need only one
@@ -503,6 +509,16 @@ begin
     myCharacterCategories[i] := '';
 end;
 
+// Define basic rules common to a majority of langutes
+procedure AParsedLanguage.defineRules;
+
+begin
+  // Add the rule which is used to determine which tokens begin statements
+  MySyntaxRules.addNewRule(RULE4_BEGINNING_STATEMENTS, []);
+  // Add the rule which is used to determine which tokens end statements
+  MySyntaxRules.addNewRule(RULE4_ENDING_STATEMENTS, []);
+end;
+
 // Retrieve the category to which the given character belongs
 function AParsedLanguage.categoryOf(const ch: string): ACharacterCategory;
 
@@ -521,7 +537,7 @@ begin
     System.high(myCharacterCategories) do
   begin
     // See if the character exists in the string
-    if Charstring.pos(ch, myCharacterCategories[i]) > 0 then
+    if Charstring.positionOf(ch, myCharacterCategories[i]) > 0 then
     begin
       result := i;
       break;
@@ -547,7 +563,7 @@ begin
   for i := 0 to System.high(categoryList) do
   begin
     // See if the character exists in the given string
-    if Charstring.pos(ch, myCharacterCategories[categoryList[i]]) > 0 then
+    if Charstring.positionOf(ch, myCharacterCategories[categoryList[i]]) > 0 then
     begin
       result := categoryList[i];
       break;

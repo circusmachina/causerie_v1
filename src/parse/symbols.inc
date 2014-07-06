@@ -71,7 +71,11 @@ const
 
 const
   { This constant enumerates one of the ways in which a symbol may be defined in
-    a source stream.
+    a source stream.  It is not directly used by the base implementations of
+    @link(ASymbol), @link(ASymbolFromSource), or @link(ASymbolRecalled) --
+    except when they read and write themselves using a binary stream -- but they
+    are provided to help standardize the ways in which symbols are represented
+    across various parser implementations.
 
     This constant represents a symbol that was encountered in the source stream,
     but which has no definition (an undeclared identifier of some kind).  This
@@ -81,14 +85,22 @@ const
   SYMCAT_UNDEFINED = $00000000;
 
   { This constant enumerates one of the ways in which a symbol may be defined in
-    a source stream.
+    a source stream.  It is not directly used by the base implementations of
+    @link(ASymbol), @link(ASymbolFromSource), or @link(ASymbolRecalled) --
+    except when they read and write themselves using a binary stream -- but they
+    are provided to help standardize the ways in which symbols are represented
+    across various parser implementations.
 
     This constant represents a symbol that is declared as a data type.
   }
   SYMCAT_TYPE = $00000001;
 
   { This constant enumerates one of the ways in which a symbol may be defined in
-    a source stream.
+    a source stream.  It is not directly used by the base implementations of
+    @link(ASymbol), @link(ASymbolFromSource), or @link(ASymbolRecalled) --
+    except when they read and write themselves using a binary stream -- but they
+    are provided to help standardize the ways in which symbols are represented
+    across various parser implementations.
 
     This constant represents a symbol that is declared as a constant value:
     either a numeric constant or a string literal.
@@ -96,7 +108,11 @@ const
   SYMCAT_LITERAL = $00000002;
 
   { This constant enumerates one of the ways in which a symbol may be defined in
-    a source stream.
+    a source stream.  It is not directly used by the base implementations of
+    @link(ASymbol), @link(ASymbolFromSource), or @link(ASymbolRecalled) --
+    except when they read and write themselves using a binary stream -- but they
+    are provided to help standardize the ways in which symbols are represented
+    across various parser implementations.
 
     This constant represents a symbol that is declared as a variable: an
     instance of a known type.
@@ -104,7 +120,11 @@ const
   SYMCAT_VARIABLE = $00000003;
 
   { This constant enumerates one of the ways in which a symbol may be defined in
-    a source stream.
+    a source stream.  It is not directly used by the base implementations of
+    @link(ASymbol), @link(ASymbolFromSource), or @link(ASymbolRecalled) --
+    except when they read and write themselves using a binary stream -- but they
+    are provided to help standardize the ways in which symbols are represented
+    across various parser implementations.
 
     This constant represents a symbol that is declared as a subroutine: a
     function, procedure, or other labeled block of code.
@@ -112,7 +132,11 @@ const
   SYMCAT_SUBROUTINE = $00000004;
 
   { This constant enumerates one of the ways in which a symbol may be defined in
-    a source stream.
+    a source stream.  It is not directly used by the base implementations of
+    @link(ASymbol), @link(ASymbolFromSource), or @link(ASymbolRecalled) --
+    except when they read and write themselves using a binary stream -- but they
+    are provided to help standardize the ways in which symbols are represented
+    across various parser implementations.
 
     This constant represents a symbol that is declared as a member of a
     structured type: a record, class, or other memory structure.
@@ -120,12 +144,30 @@ const
   SYMCAT_STRUCTURE_MEMBER = $00000005;
 
   { This constant enumerates one of the ways in which a symbol may be defined in
-    a source stream.
+    a source stream.  It is not directly used by the base implementations of
+    @link(ASymbol), @link(ASymbolFromSource), or @link(ASymbolRecalled) --
+    except when they read and write themselves using a binary stream -- but they
+    are provided to help standardize the ways in which symbols are represented
+    across various parser implementations.
 
     This constant represents a symbol that is declared as a parameter accepted
     by a subroutine: one of the variables that may be passed to a subroutine.
   }
   SYMCAT_PARAMETER = $00000006;
+
+  { This constant enumerates one of the ways in which a symbol may be defined in
+    a source stream.  It is not directly used by the base implementations of
+    @link(ASymbol), @link(ASymbolFromSource), or @link(ASymbolRecalled) --
+    except when they read and write themselves using a binary stream -- but they
+    are provided to help standardize the ways in which symbols are represented
+    across various parser implementations.
+
+    This constant is a placeholder for user-defined symbol categories.  User-
+    defined symbol categories should begin with this value.  Values lower than
+    this constant are reserved in case there is a need for future expansion of
+    the base parsing library.
+  }
+  SYMCAT_USER = $00000100;
 
   { This flag indicates that a symbol has been declared as external to the
     source.  It is designed to be combined with another symbol category
@@ -183,6 +225,15 @@ type ASymbol = class(AStringLeaf)
     }
     function shallowCopyFrom(const Other: AnObject): boolean; override;
 
+    { Calculate the number of bytes required to stream the symbol.
+
+      This method builds upon the behavior inherited from
+      @link(AStringLeaf.selfStreamingLength): it calls the inherited routine
+      first, then adds the number of bytes required to write the symbol
+      category and symbol scope.
+    }
+    function selfStreamingLength: TStreamIOSize; override;
+
     { Write the symbol, and just the symbol, to the specified stream.
 
       This method builds upon the behavior inherited from
@@ -239,9 +290,9 @@ end;
   @link(ASymbolFromSource.ParentSymbol).  This is useful when a symbol
   represents a variable or some other source item that derives from a
   pre-defined type.  Although instances of @link(ASymbolFromSource) make use
-  of the @code(Parent) property inherited from @link(ANode), symbols are not
-  normally collected into hierarchical lists but are instead kept in either
-  a tree or linear sequence to make symbol lookup as fast as possible.
+  of the @link(ANode.Parent Parent) property inherited from @link(ANode),
+  symbols are not normally collected into hierarchical lists but are instead
+  kept in either a tree or vector to make symbol lookup as fast as possible.
 
   When @link(ASymbolFromSource.writeSelfTo) is called, the symbol will write
   an absolute reference to its parent, if any, to the destination stream.  This
@@ -253,6 +304,12 @@ end;
   reference.  You should use an instance of @link(ASymbolRecalled) instead.
 }
 type ASymbolFromSource = class(ASymbol)
+  protected
+    { Stores the name of the source in which the symbol was declared }
+    mySourceName: string;
+    { Stores the line number of the source on which the symbol was declared }
+    mySourceLine: longword;
+
   public
     { Construct a new symbol with the given name and type.
 
@@ -267,6 +324,9 @@ type ASymbolFromSource = class(ASymbol)
     constructor named(const thisKey: string;
       const ParentType: ASymbol); reintroduce; virtual;
 
+    { Initializer }
+    function init: boolean; override;
+
     { Construct a shallow copy of the other object.
 
       This method builds upon the behavior inherited from
@@ -280,6 +340,15 @@ type ASymbolFromSource = class(ASymbol)
       table as @code(Other), if any.
     }
     function shallowCopyFrom(const Other: AnObject): boolean; override;
+
+    { Calculate the number of bytes required to stream the symbol.
+
+      This method builds upon the behavior inherited from
+      @link(ASymbol.selfStreamingLength): it calls that method, then
+      adds the number of bytes required to write a reference to its parent,
+      if any.
+    }
+    function selfStreamingLength: TStreamIOSize; override;
 
     { Write the symbol, and just the symbol, to the specified stream.
 
@@ -301,6 +370,41 @@ type ASymbolFromSource = class(ASymbol)
       The caller should NOT free the reference returned by this routine.
     }
     function ParentSymbol: ASymbol; virtual;
+
+    { Retrieve the name of the source in which the symbol was defined.  This
+      function is useful in case a message (hint, warning, or error) must be
+      displayed to the user while parsing.
+    }
+    function sourceName: string; virtual;
+
+    { Set the name of the source in which the symbol is defined.
+
+      @return(The previous value of @link(ASymbolFromSource.sourceName).)
+    }
+    function setSourceName(const thisName: string): string; virtual;
+
+    { Set the source from which the symbol is defined.
+
+      This method calls @link(AnObject.name AStream.name) on @code(ThisSource)
+      and stores the result as the value of @link(ASymbolFromSource.sourceName).
+      If @code(ThisSource) represents an instance of @link(AFileStream), this
+      will result in the name of the file being stored.
+
+      @return(The previous value of @link(ASymbolFromSource.sourceName).)
+    }
+    function setSource(const ThisSource: AStream): string; virtual;
+
+    { Retrieve the line number in the source on which the symbol is defined.
+      This function is useful in case a message (hint, warning, or error) must
+      be displayed to the user while parsing.
+    }
+    function sourceLine: longword; virtual;
+
+    { Set the line number in the source on which the symbol is defined.
+
+      @return(The previous value of @link(ASymbolFromSource.sourceLine).)
+    }
+    function setSourceLine(const thisLine: longword): longword; virtual;
 end;
 
 // ASymbolRecalled *************************************************************
@@ -333,6 +437,15 @@ type ASymbolRecalled = class(ASymbol)
       table as @code(Other), if any.
     }
     function shallowCopyFrom(const Other: AnObject): boolean; override;
+
+    { Calculate the number of bytes required to stream the symbol.
+
+      This method builds upon the behavior inherited from
+      @link(ASymbol.selfStreamingLength): it calls that method, then
+      adds the number of bytes required to write the value of
+      @link(ASymbolRecalled.parentSymbol).
+    }
+    function selfStreamingLength: TStreamIOSize; override;
 
     { Write the symbol, and just the symbol, to the specified stream.
 
@@ -399,6 +512,17 @@ begin
     myScope := ASymbol(Other).scope;
     myCategory := ASymbol(Other).category;
   end;
+end;
+
+// Calculate the number of bytes required to stream the symbol
+function ASymbol.selfStreamingLength: TStreamIOSize;
+
+begin
+  // Call the inherited routine first
+  result := inherited selfStreamingLength;
+
+  // Add ourselves
+  inc(result, sizeof(myScope) + sizeof(myCategory));
 end;
 
 // Write the symbol to the given stream
@@ -472,6 +596,19 @@ begin
   MyParent := ParentType;
 end;
 
+// Initializer
+function ASymbolFromSource.init: boolean;
+
+begin
+  result := inherited init;
+
+  if result then
+  begin
+    mySourceName := '';
+    mySourceLine := 0;
+  end;
+end;
+
 // Construct a shallow copy of the other object
 function ASymbolFromSource.shallowCopyFrom(const Other: AnObject): boolean;
 
@@ -484,6 +621,17 @@ begin
   begin
     MyParent := ASymbolFromSource(Other).Parent;
   end;
+end;
+
+// Calculate the number of bytes required to stream the symbol
+function ASymbolFromSource.selfStreamingLength: TStreamIOSize;
+
+begin
+  // Call the inherited routine first
+  result := inherited selfStreamingLength;
+
+  // Add ourselves
+  inc(result, sizeof(TSymbolReference));
 end;
 
 // Write the symbol to the given stream
@@ -522,6 +670,51 @@ begin
   Result := ASymbol(MyParent);
 end;
 
+// Retrieve the name of the source in which the symbol was defined
+function ASymbolFromSource.sourceName: string;
+
+begin
+  result := mySourceName;
+end;
+
+// Set the name of the source in which the symbol is defined
+function ASymbolFromSource.setSourceName(const thisName: string): string;
+
+begin
+  // Return the old value
+  result := mySourceName;
+
+  mySourceName := thisName;
+end;
+
+// Set the name of the source in which the symbol is defined
+function ASymbolFromSource.setSource(const ThisSource: AStream): string;
+
+begin
+  // Return the old value
+  result := mySourceName;
+
+  if ThisSource <> nil then
+    mySourceName := ThisSource.name;
+end;
+
+// Retrieve the line number in the source on which the symbol was defined
+function ASymbolFromSource.sourceLine: longword;
+
+begin
+  result := mySourceLine;
+end;
+
+// Set the line number in the source on which the symbol is defined
+function ASymbolFromSource.setSourceLine(const thisLine: longword): longword;
+
+begin
+  // Return the old value
+  result := mySourceLine;
+
+  mySourceLine := thisLine;
+end;
+
 // ASymbolRecalled *************************************************************
 // Initializer
 function ASymbolRecalled.init: boolean;
@@ -548,6 +741,17 @@ begin
   begin
     myParentSymbol := ASymbolRecalled(Other).parentSymbol;
   end;
+end;
+
+// Calculate the number of bytes required to stream the symbol
+function ASymbolRecalled.selfStreamingLength: TStreamIOSize;
+
+begin
+  // Call the inherited routine
+  result := inherited selfStreamingLength;
+
+  // Add ourselves
+  inc(result, sizeof(myParentSymbol));
 end;
 
 // Write the symbol to the given stream

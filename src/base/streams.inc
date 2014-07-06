@@ -346,6 +346,14 @@ type
    that is capable of streaming its data.
 }
 type CanStream = interface
+  { Determine the size of the data that will be streamed, in bytes.
+
+    Classes that implement this method should calculate the total size of
+    the data that will be read from or written to a stream when
+    either @link(CanStream.readFrom) or @link(CanStream.writeTo) is called.
+  }
+  function streamingLength: TStreamIOSize;
+
   { Reads class data from \p Source.  The class itself is responsible for
     validating that the information being read is pertinent to that class.
     This method is normally implemented to reverse the steps taken in

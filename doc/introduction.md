@@ -2,7 +2,7 @@
 Copyright (C) 2014 by [Michael Malicoat][5]  
 [Home page](http://causerie.circusmachina.com) |
 [Source][] |
-[Source documentation](http://www.circusmachina.com/projects/causerie/doc/html/index.html) (you're looking at it) |
+[Source documentation](http://projects.circusmachina.com/causerie/) (you're looking at it) |
 [Bug tracker](http://mantis.circusmachina.com)
 
 Introduction

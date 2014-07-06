@@ -34,8 +34,7 @@
     @item(a language definition)
   )
 
-  as well as the items required by @link(AParser) before calling
-  @code(parse).
+  as well as the items required by @link(AParser) before calling @code(parse).
 }
 type AParsedLanguageParser = class(AParser)
   protected
@@ -45,6 +44,13 @@ type AParsedLanguageParser = class(AParser)
   public
     { Initializer }
     function init: boolean; override;
+
+    { Destroy the parser.
+
+      This method frees @link(AParsedLanguageParser.Language) and then calls
+      the inherited routine.
+    }
+    destructor destroy; override;
 
     { Parse the source.
 
@@ -148,6 +154,17 @@ begin
   end;
 end;
 
+// Destructor
+destructor AParsedLanguageParser.destroy;
+
+begin
+  // Free the language definition, if any
+  if MyLanguage <> nil then
+    MyLanguage.free;
+
+  inherited destroy;
+end;
+
 // Parse the source
 function AParsedLanguageParser.parse: int64;
 
@@ -196,5 +213,14 @@ begin
   if MyLanguage <> nil then
     inherited skipTo(MyLanguage.SyntaxRule(rule), silenceInterveningTokens);
 end;
+
+// Properties ------------------------------------------------------------------
+// Retrieve a reference to the language used to parse the source
+function AParsedLanguageParser.Language: AParsedLanguage;
+
+begin
+  Result := MyLanguage;
+end;
+
 {$ENDIF}
 

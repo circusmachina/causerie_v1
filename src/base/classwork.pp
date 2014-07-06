@@ -32,6 +32,7 @@
       @item(iteration: @link(CanIterate) and @link(AnIterator) and its
             descendants)
       @item(vectors: @link(AVector) and its descendants)
+      @item(basic application support: @link(AnApplication) and its descendants)
   )
 
   All of this functionality routinely serves as the basis for my projects, and
@@ -68,6 +69,8 @@ interface
 {$I stringlists.inc}
 {$I variantlists.inc}
 {$I dictionaries.inc}
+{$I streambookmarks.inc}
+{$I bookmarkedstreams.inc}
 {$I counters.inc}
 {$I loggeditems.inc}
 {$I logging.inc}
@@ -76,6 +79,8 @@ interface
 {$I vectors.inc}
 {$I pointervectors.inc}
 {$I objectvectors.inc}
+{$I applications.inc}
+{$I consoleapplications.inc}
 
 {$UNDEF ReadInterface}
 
@@ -92,6 +97,7 @@ resourcestring
   {$I linkedlists.inc}
   {$I stringlists.inc}
   {$I dictionaries.inc}
+  {$I streambookmarks.inc}
   {$I counters.inc}
   {$I loggeditems.inc}
   {$I vectors.inc}
@@ -124,6 +130,8 @@ uses
 {$I stringlists.inc}
 {$I variantlists.inc}
 {$I dictionaries.inc}
+{$I streambookmarks.inc}
+{$I bookmarkedstreams.inc}
 {$I counters.inc}
 {$I loggeditems.inc}
 {$I logging.inc}
@@ -132,6 +140,8 @@ uses
 {$I vectors.inc}
 {$I pointervectors.inc}
 {$I objectvectors.inc}
+{$I applications.inc}
+{$I consoleapplications.inc}
 
 {$UNDEF ReadImplementation}
 

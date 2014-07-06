@@ -256,6 +256,14 @@ type AVector = class(APrintingObject, CanStream)
       virtual;
 
     // CanStream implementation ------------------------------------------------
+    { Calculate the number of bytes required to stream the vector.
+
+      This method calculates the size of its array and then adds the sizes of
+      @link(AVector.elementSize) and @link(AVector.length).  This value is
+      returned to the caller.
+    }
+    function streamingLength: TStreamIOSize; virtual;
+
     { Write the array and its elements to the specified stream.
 
       This method writes the values of @link(AVector.elementSize) and
@@ -679,6 +687,14 @@ begin
 end;
 
 // CanStream implementation ----------------------------------------------------
+// Calculate the number of bytes required to stream the vector
+function AVector.streamingLength: TStreamIOSize;
+
+begin
+  result := (myLength * myElementSize) +
+    (sizeof(myLength) + sizeof(myElementSize));
+end;
+
 // Write the array and its contents to the specified stream
 function AVector.writeTo(const Dest: AStream): TStreamIOSize;
 

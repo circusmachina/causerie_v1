@@ -211,6 +211,15 @@ type
     }
     function shallowCopyFrom(const Other: AnObject): boolean; override;
 
+    { Calculate the number of bytes required to stream the node, and just the
+      node.
+
+      This method overrides the behavior inherited from
+      @link(ANode.selfStreamingLength); it returns the number of bytes required
+      to stream the sort key and index of the node.
+    }
+    function selfStreamingLength: TStreamIOSize; override;
+
     { Write the node, and just the node, to the specified stream.  For more
       information on this routine, see @link(ANode.writeSelfTo).
 
@@ -440,7 +449,7 @@ type
       @false if not.)
     }
     function addLeaf(const Leaf: ABinaryLeaf;
-      const freeOnFailure: boolean = false): boolean; virtual;
+      const freeOnFailure: boolean = true): boolean; virtual;
 
     { Removes, but does not free, the node with the specified key from the
       tree.
@@ -559,6 +568,16 @@ type
       keys that are identical to those in the existing tree.
     }
     function shallowCopyFrom(const Other: AnObject): boolean; override;
+
+    { Calculate the number of bytes required to stream the tree and its nodes.
+
+      This method overrides the behavior inherited from @link(ABinaryLeaf).
+      It calls @link(ABinaryLeaf.selfStreamingLength) on its root node, which
+      causes all nodes in the tree to calculate their streaming sizes.  It then
+      adds the number of bytes required to stream the total number of nodes
+      in the tree and returns this result.
+    }
+    function selfStreamingLength: TStreamIOSize; override;
 
     { Write the tree and its nodes to the specified stream.
 
@@ -976,6 +995,13 @@ begin
   end;
 end;
 
+// Calculate the number of bytes required to stream the node
+function ABinaryLeaf.selfStreamingLength: TStreamIOSize;
+
+begin
+  result := sizeof(myIndex) + sizeof(mySortKey);
+end;
+
 {* Streams data from the node to \p Dest.  This routine is designed to be
    called from ABinaryLeaf.writeTo, which executes the call for each node
    connected to the specified leaf.
@@ -1172,7 +1198,7 @@ end;
 
 // Add a new node to the tree
 function ABinaryTree.addLeaf(const Leaf: ABinaryLeaf;
-  const freeOnFailure: boolean = false): boolean;
+  const freeOnFailure: boolean = true): boolean;
 
 begin
   { Attempt to insert the leaf and check to see whether it succeeded.
@@ -1372,6 +1398,17 @@ begin
   end;
 end;
 
+// Calculate the number of bytes required to stream the tree
+function ABinaryTree.selfStreamingLength: TStreamIOSize;
+
+begin
+  result := sizeof(myChildCount);
+
+  // Include our nodes, if any
+  if MyChild <> nil then
+    inc(result, MyChild.streamingLength);
+end;
+
 // Write the tree and its nodes to the specified stream
 function ABinaryTree.writeSelfTo(const Dest: AStream): TStreamIOSize;
 
@@ -1385,7 +1422,7 @@ begin
   result := Dest.write(sizeof(myChildCount), myChildCount);
 
   // Write each node
-  if MyRoot <> nil then
+  if MyChild <> nil then
     result := result + MyChild.writeTo(Dest);
 end;
 
@@ -1399,8 +1436,8 @@ begin
   result := Dest.printEach([Self.toString, suffix]);
 
   // Print each node
-  if MyRoot <> nil then
-    result := result + MyRoot.printTo(Dest, prefix, suffix);
+  if MyChild <> nil then
+    result := result + MyChild.printTo(Dest, prefix, suffix);
 end;
 
 // CanStream implementation ----------------------------------------------------

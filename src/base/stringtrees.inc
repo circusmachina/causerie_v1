@@ -60,11 +60,21 @@ type AStringLeaf = class(ABinaryLeaf)
     }
     function shallowCopyFrom(const Other: AnObject): boolean; override;
 
+    { Calculate the number of bytes required to stream the node.
+
+      This method builds upon the behavior inherited from
+      @link(ABinaryLeaf.selfStreamingLength); it calls the inherited routine,
+      then calculates the number of bytes required to write its name and
+      adds that to the result, which is then returned to the user.
+    }
+    function selfStreamingLength: TStreamIOSize; override;
+
     { Write the node, and just the node, to the specified stream.
 
-      This method writes the value of @link(AStringLeaf.name) to the stream
-      by calling @link(AStream.writeString) on @code(Dest).  It then calls the
-      inherited routine.  See @link(ABinaryLeaf.writeSelfTo) for more details.
+      This method builds upon the behavior inherited from
+      @link(ABinaryLeaf.writeSelfTo): it first calls the inherited routine, then
+      writes the value of @link(AStringLeaf.name) to the stream by calling
+      @link(AStream.writeString) on @code(Dest).
 
       @return(The total number of bytes written to @code(Dest).)
     }
@@ -73,9 +83,10 @@ type AStringLeaf = class(ABinaryLeaf)
     // CanStream implementation ------------------------------------------------
     { Read the node from the specified stream.
 
-      This method reads the value of @link(AStringLeaf.name) from the stream
-      by calling @link(AStream.readString) on @code(Source).  It then calls the
-      inherited routine.  See @link(ABinaryLeaf.readFrom) for more details.
+      This method builds upon the behavior inherited from
+      @link(ABinaryLeaf.readFrom): it calls the inherited routine first, then
+      reads the value of @link(AStringLeaf.name) from the stream by calling
+      @link(AStream.readString) on @code(Source).
 
       @return(The total number of bytes read from @code(Source).)
     }
@@ -169,19 +180,15 @@ begin
   end;
 end;
 
-// IsPrintable implementation --------------------------------------------------
-{* Constructs a string representation of the leaf.  This string contains the
-   name of the string and its index; these values are inserted into the string
-   as specified by #stlfStringRepresentation.
-
-   \return A string representation of the leaf, as described above.
-*}
-function AStringLeaf.toString: string;
+// Calculate the number of bytes required to stream the node
+function AStringLeaf.selfStreamingLength: TStreamIOSize;
 
 begin
-  result := format(stlfStringRepresentation, [
-    Self.displayName, myIndex, myName
-  ]);
+  // Call the inherited routine first
+  result := inherited selfStreamingLength;
+
+  // Add the length of our string + length specifier + length checksum
+  inc(result, System.length(myName) + (sizeof(TStreamIOSize) * 2));
 end;
 
 // Write the node, and just the node, to the given stream
@@ -191,9 +198,10 @@ begin
   result := 0;
 
   if Dest <> nil then
-    result := Dest.writeString(myName);
-
-  result := result + inherited writeSelfTo(Dest);
+  begin
+    result := inherited writeSelfTo(Dest);
+    result := result + Dest.writeString(myName);
+  end;
 end;
 
 // CanStream implementation ----------------------------------------------------
@@ -204,9 +212,25 @@ begin
   result := 0;
 
   if Source <> nil then
-    result := Source.readString(myName);
+  begin
+    result := inherited readFrom(Source);
+    result := result + Source.readString(myName);
+  end;
+end;
 
-  result := result + inherited readFrom(Source);
+// CanPrint implementation -----------------------------------------------------
+{* Constructs a string representation of the leaf.  This string contains the
+   name of the string and its index; these values are inserted into the string
+   as specified by #stlfStringRepresentation.
+
+   \return A string representation of the leaf, as described above.
+*}
+function AStringLeaf.toString: string;
+
+begin
+  result := SysUtils.format(stlfStringRepresentation, [
+    Self.displayName, myIndex, myName
+  ]);
 end;
 
 // Properties ------------------------------------------------------------------

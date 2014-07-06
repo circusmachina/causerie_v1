@@ -93,12 +93,23 @@ type ACounter = class(AStringLeaf)
     }
     function shallowCopyFrom(const Other: AnObject): boolean; override;
 
+    { Calculate the number of bytes required to stream the counter, and just
+      the counter.
+
+      This method builds upon the behavior inherited from
+      @link(AStringLeaf.selfStreamingLength): it calls the inherited routine,
+      and then adds the number of bytes required to store the current value of
+      the counter, its limit, and whether or not it should raise an exception
+      on overages.
+    }
+    function selfStreamingLength: TStreamIOSize; override;
+
     { Write the counter, and just the counter, to the specified stream.
 
-      This method writes the current value of the counter as well as its
-      limit and whether or not it should raise an exception on overages to
-      @code(Dest).  It then calls the inherited routine, which ensures that the
-      name of the counter is also written.
+      This method builds upon the behavior inherited from
+      @link(AStringLeaf.writeSelfTo): it calls the inherited routine first, then
+      writes the current value of the counter, its limit, and whether or not it
+      should raise an exception on overages.
 
       @return(The total number of bytes written to @code(Dest).)
     }
@@ -107,10 +118,10 @@ type ACounter = class(AStringLeaf)
   // CanStream implementation --------------------------------------------------
     { Read the counter from the specified stream.
 
-      This method reads the value of the counter, its limit, and whether or
-      not it should raise an exception on overages from @code(Source).  It then
-      calls the inherited routine, which ensures that the name of the counter
-      is also read.
+      This method builds upon the behavior inherited from
+      @link(AStringLeaf.readFrom): it calls the inherited routine first, then
+      reads the value of the counter, its limit, and whether or not it should
+      raise an exception on overages from @code(Source).
 
       @return(The total number of bytes read from @code(Source).)
     }
@@ -324,6 +335,16 @@ begin
   end;
 end;
 
+// Calculate the number of bytes required to stream the counter
+function ACounter.selfStreamingLength: TStreamIOSize;
+
+begin
+  // Call the inherited routine first
+  result := inherited selfStreamingLength;
+
+  inc(result, sizeof(myValue) + sizeof(myLimit) + sizeof(myNotifyOnExcess));
+end;
+
 // Write the counter to the given stream
 function ACounter.writeSelfTo(const Dest: AStream): TStreamIOSize;
 
@@ -332,15 +353,15 @@ begin
 
   if Dest <> nil then
   begin
+    result := inherited writeSelfTo(Dest);
+
     // Write the current value of the counter
-    result := Dest.write(sizeof(myValue), myValue);
+    result := result + Dest.write(sizeof(myValue), myValue);
     // Write the limit of the counter
     result := result + Dest.write(sizeof(myLimit), myLimit);
     // Write the flag that indicates whether to raise an exception on overages
     result := result + Dest.write(sizeof(myNotifyOnExcess), myNotifyOnExcess);
   end;
-
-  result := result + inherited writeSelfTo(Dest);
 end;
 
 // CanStream implementation ----------------------------------------------------
@@ -352,15 +373,15 @@ begin
 
   if Source <> nil then
   begin
+    result := inherited readFrom(Source);
+
     // Read the value of the counter
-    result := Source.read(sizeof(myValue), myValue);
+    result := result + Source.read(sizeof(myValue), myValue);
     // Read the limit of the counter
     result := result + Source.read(sizeof(myLimit), myLimit);
     // Read the flag that indicates whether to raise an exception on overages
     result := result + Source.read(sizeof(myNotifyOnExcess), myNotifyOnExcess);
   end;
-
-  result := result + inherited readFrom(Source);
 end;
 
 // CanPrint implementation -----------------------------------------------------

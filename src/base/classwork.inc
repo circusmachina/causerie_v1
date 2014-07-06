@@ -93,7 +93,7 @@ type AnObject = class(TObject)
       If one of the parent classes encountered has @code(thisClassName), then
       the method will return @true.  Otherwise, it returns @false.
     }
-    function isKindOf(thisClassName: string): boolean; virtual;
+    class function isKindOf(thisClassName: string): boolean; virtual;
 
     { Determine whether the class implements the given method.
 
@@ -101,9 +101,9 @@ type AnObject = class(TObject)
       the method table contains a valid method with @code(thisMethodName).  If
       so, it returns @true; otherwise, it returns @false.
     }
-    function respondsTo(thisMethodName: string): boolean; virtual;
+    class function respondsTo(thisMethodName: string): boolean; virtual;
 
-    { Determine whether the class implements the given method.
+    { Determine whether the class implements the given interface.
 
       This method allows you to determine whether the current instance is
       part of a class that implements a given interface.  Internally, the
@@ -116,7 +116,7 @@ type AnObject = class(TObject)
       if you are compiling code using Free Pascal's @code(INTERFACES CORBA)
       directive; otherwise, it must be the GUID of the interface that is sought.
     }
-    function implements(interfaceName: string): boolean; virtual;
+    class function implements(interfaceName: string): boolean; virtual;
 
     { Make a shallow copy of the data from @code(Other), assigning it to the
       current object.
@@ -143,6 +143,13 @@ type AnObject = class(TObject)
     }
     function name: string; virtual;
 end;
+
+{ This definition simplifies the implementation of @link(AnObjectVector), since
+  it allows the base implementation of @link(AnObjectVector) to construct
+  instances of a given object on the fly (such as when
+  @link(AnObjectVector.readFrom) is called.
+}
+type AnObjectClass = class of AnObject;
 {$ENDIF}
 {$IFDEF ReadResourceStrings}
   { This is the format of the error message passed to the exception raised when
@@ -207,7 +214,7 @@ begin
 end;
 
 // Determine if the instance is related to the named class
-function AnObject.isKindOf(thisClassName: string): boolean;
+class function AnObject.isKindOf(thisClassName: string): boolean;
 
 var
   // Stores a class reference
@@ -215,7 +222,7 @@ var
 
 begin
   result := false;
-  thisClass := Self.ClassType;
+  thisClass := Self;
 
   // Search backwards through the class hierarchy
   while assigned(ThisClass) do
@@ -230,14 +237,14 @@ begin
 end;
 
 // Determine if the instance has the named method
-function AnObject.respondsTo(thisMethodName: string): boolean;
+class function AnObject.respondsTo(thisMethodName: string): boolean;
 
 begin
   result := Self.methodAddress(thisMethodName) <> nil;
 end;
 
 // Determine if the instance implements the named interface
-function AnObject.implements(interfaceName: string): boolean;
+class function AnObject.implements(interfaceName: string): boolean;
 
 var
   // Points to the interface table

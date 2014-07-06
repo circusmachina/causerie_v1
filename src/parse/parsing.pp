@@ -58,7 +58,10 @@ uses
 {$I parsermessages.inc}
 {$I parsers.inc}
 {$I parsedlanguageparsers.inc}
-{I sourceparsers.inc}
+{$I symbolparsers.inc}
+{$I sourceparsers.inc}
+{$I statements.inc}
+{$I sourcestatements.inc}
 
 {$UNDEF ReadInterface}
 
@@ -67,6 +70,7 @@ resourcestring
   {$I tokens.inc}
   {$I parsermessages.inc}
   {$I parsers.inc}
+  {$I symbolparsers.inc}
   {$UNDEF ReadResourceStrings}
 
 implementation
@@ -89,7 +93,10 @@ uses
 {$I parsermessages.inc}
 {$I parsers.inc}
 {$I parsedlanguageparsers.inc}
-{I sourceparsers.inc}
+{$I symbolparsers.inc}
+{$I sourceparsers.inc}
+{$I statements.inc}
+{$I sourcestatements.inc}
 
 {$UNDEF ReadImplementation}
 

@@ -62,6 +62,15 @@ type AVariantListItem = class(ANode)
     }
     function shallowCopyFrom(const Other: AnObject): boolean; override;
 
+    { Calculate the number of bytes required to stream the node, and just the
+      node.
+
+      This method builds upon the behavior inherited from
+      @link(ANode.selfStreamingLength): it calls the inherited routine, then
+      adds the number of bytes required to store an instance of @code(TVarData).
+    }
+    function selfStreamingLength: TStreamIOSize; override;
+
     { Write the node, and just the node, to the specified stream.  For more
       information on this method, see @link(ANode.writeSelfTo).
 
@@ -314,6 +323,17 @@ begin
   begin
     myValue := AVariantListItem(Other).value;
   end;
+end;
+
+// Calculate the number of bytes required to stream the node
+function AVariantListItem.selfStreamingLength: TStreamIOSize;
+
+begin
+  // Call the inherited routine first
+  result := inherited selfStreamingLength;
+
+  // Add ourselves
+  inc(result, sizeof(TVarData));
 end;
 
 // Write the node, and just the node, to the specified stream

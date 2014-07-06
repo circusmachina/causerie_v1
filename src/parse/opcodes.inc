@@ -70,6 +70,14 @@ type AnOpcodeDictionaryEntry = class(AStringLeaf)
     }
     function shallowCopyFrom(const Other: AnObject): boolean; override;
 
+    { Calculate the total number of bytes required to stream the opcode.
+
+      This method builds upon the behavior inherited from
+      @link(AStringLeaf.selfStreamingLength): it calls the inherited routine,
+      then adds the number of bytes required to store the opcode value itself.
+    }
+    function selfStreamingLength: TStreamIOSize; override;
+
     { Write the opcode, and just the opcode, to the given stream.
 
       This method extends the behavior inherited from
@@ -194,6 +202,17 @@ begin
   begin
     myCode := AnOpcodeDictionaryEntry(Other).code;
   end;
+end;
+
+// Calculate the number of bytes required to stream the opcode
+function AnOpcodeDictionaryEntry.selfStreamingLength: TStreamIOSize;
+
+begin
+  // Call the inherited routine
+  result := inherited selfStreamingLength;
+
+  // Include ourselves
+  inc(result, sizeof(myCode));
 end;
 
 // Write the opcode, and just the opcode, to the given stream

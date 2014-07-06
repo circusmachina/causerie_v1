@@ -90,7 +90,13 @@ type AStringStream = class(AStream, CanStream, CanPrint)
     }
     function shallowCopyFrom(const Other: AnObject): boolean; override;
 
-    // IsStreamable implementation ---------------------------------------------
+    // CanStream implementation ------------------------------------------------
+    { Determine the total amount of data, in bytes, that will be read or
+      written when either @link(AStringStream.readFrom) or
+      @link(AStringStream.writeTo) is called.
+    }
+    function streamingLength: TStreamIOSize; virtual;
+
     { Writes the content of the stream to @code(Dest).  See
       @link(CanStream.writeTo) for more information on this method.
 
@@ -323,6 +329,14 @@ begin
 end;
 
 // IsStreamable implementation -------------------------------------------------
+// Determine the size, in bytes, of the data to be streamed
+function AStringStream.streamingLength: TStreamIOSize;
+
+begin
+  // Total value streamed is stream length + length specifier + length checksum
+  result := System.length(myString) + (sizeof(TStreamIOSize) * 2);
+end;
+
 {* Writes the contents of the stream to \p Dest.  This routine calls
    AStream.writeString().
 

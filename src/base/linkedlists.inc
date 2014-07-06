@@ -144,6 +144,14 @@ type ALinkedList = class (APrintingObject, CanStream)
     function shallowCopyFrom(const Other: AnObject): boolean; override;
 
     // CanStream implementation ------------------------------------------------
+    { Calculate the number of bytes required to stream the list and its nodes.
+
+      This method calls @link(ANode.streamingLength) and then adds the number
+      of bytes required to stream @link(ALinkedList.census) to the result, which
+      is then returned to the caller.
+    }
+    function streamingLength: TStreamIOSize; virtual;
+
     { Write the list and its nodes to the specified stream.
 
       This method first writes the value of @link(ALinkedList.census) to
@@ -550,6 +558,17 @@ begin
 end;
 
 // CanStream implementation ----------------------------------------------------
+// Calculate the number of bytes required to stream the list
+function ALinkedList.streamingLength: TStreamIOSize;
+
+begin
+  result := sizeof(myCensus);
+
+  // Include our nodes
+  if MyLastItem <> nil then
+    inc(result, MyLastItem.streamingLength);
+end;
+
 {* Writes the list and its items to \p Dest.  This routine first writes the
    number of items in the list, then calls ANode::writeTo() on the last item in
    the last.  That function recursively writes all items in the list to the

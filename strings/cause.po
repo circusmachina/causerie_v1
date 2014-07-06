@@ -1,0 +1,372 @@
+msgid ""
+msgstr "Content-Type: text/plain; charset=UTF-8"
+
+#: classwork.bfsterrorallocatingbuffer
+msgid "failed to allocate the %d bytes needed to buffer data for %s"
+msgstr ""
+
+#: classwork.bnlfstringrepresentation
+msgid "%s at index %d with key %d"
+msgstr ""
+
+#: classwork.bntrdefaultnodeprintingprefix
+msgctxt "classwork.bntrdefaultnodeprintingprefix"
+msgid "#9"
+msgstr ""
+
+#: classwork.bntrdefaultnodeprintingsuffix
+msgctxt "classwork.bntrdefaultnodeprintingsuffix"
+msgid ""
+msgstr ""
+
+#: classwork.bntrdefaultprintingsuffix
+msgctxt "classwork.bntrdefaultprintingsuffix"
+msgid ""
+msgstr ""
+
+#: classwork.bntrstringrepresentationplural
+msgctxt "classwork.bntrstringrepresentationplural"
+msgid "%s that contains %d nodes"
+msgstr ""
+
+#: classwork.bntrstringrepresentationsingular
+msgctxt "classwork.bntrstringrepresentationsingular"
+msgid "%s that contains %d node"
+msgstr ""
+
+#: classwork.charsbeginquotecharacter
+msgctxt "classwork.charsbeginquotecharacter"
+msgid "\""
+msgstr ""
+
+#: classwork.charsendquotecharacter
+msgctxt "classwork.charsendquotecharacter"
+msgid "\""
+msgstr ""
+
+#: classwork.charslowercaseletters
+msgid "abcdefghijklmnopqrstuvwxyz"
+msgstr ""
+
+#: classwork.charsuppercaseletters
+msgid "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+msgstr ""
+
+#: classwork.cntrerrorlimitreached
+msgid "the number of %s exceeds the limit of %d"
+msgstr ""
+
+#: classwork.cntrstringrepresentation
+msgid "%s: %d"
+msgstr ""
+
+#: classwork.ctlsdefaultprintingprefix
+msgctxt "classwork.ctlsdefaultprintingprefix"
+msgid "#9"
+msgstr ""
+
+#: classwork.ctlsdefaultprintingsuffix
+msgctxt "classwork.ctlsdefaultprintingsuffix"
+msgid ""
+msgstr ""
+
+#: classwork.ctlsprintedsummaryheader
+msgid "Total number of"
+msgstr ""
+
+#: classwork.dctedefaultdelimiter
+msgid "="
+msgstr ""
+
+#: classwork.dctestringrepresentation
+msgid "%s%s%s"
+msgstr ""
+
+#: classwork.errdefaultmessage
+msgid "an error has occurred"
+msgstr ""
+
+#: classwork.errstringrepresentation
+msgid "%s"
+msgstr ""
+
+#: classwork.errstringrepresentationwithcode
+msgid "(%d): %s"
+msgstr ""
+
+#: classwork.fserrinvalidfilename
+msgid "an invalid file name was provided to the stream handler"
+msgstr ""
+
+#: classwork.fserropenread
+msgid "failed to open \"%s\" for reading because %s"
+msgstr ""
+
+#: classwork.fserropenwrite
+msgid "failed to open \"%s\" for writing because %s"
+msgstr ""
+
+#: classwork.fserrreading
+msgid "failed to read from \"%s\" because %s"
+msgstr ""
+
+#: classwork.fserrwriting
+msgid "failed to write to \"%s\" because %s"
+msgstr ""
+
+#: classwork.ioaccessdenied
+msgid "access to the file was denied"
+msgstr ""
+
+#: classwork.iodatacheckfailed
+msgid "the data integrity check failed"
+msgstr ""
+
+#: classwork.iodrivenotfound
+msgid "the specified drive was not found"
+msgstr ""
+
+#: classwork.iodriveprotected
+msgid "the drive is protected against writes"
+msgstr ""
+
+#: classwork.iodrivereadfailure
+msgid "the drive could not be read"
+msgstr ""
+
+#: classwork.iodriveunavailable
+msgid "the drive is temporarily unable to handle the request"
+msgstr ""
+
+#: classwork.iodrivewritefailure
+msgid "writing to the drive failed"
+msgstr ""
+
+#: classwork.iofilenotfound
+msgid "the specified file was not found"
+msgstr ""
+
+#: classwork.iofilenotopen
+msgid "the file must first be opened"
+msgstr ""
+
+#: classwork.iohardwarefailure
+msgid "a hardware failure occurred"
+msgstr ""
+
+#: classwork.ioincorrectmedia
+msgid "incorrect media is loaded in the drive"
+msgstr ""
+
+#: classwork.ioinvaliddrive
+msgid "the drive specified is invalid"
+msgstr ""
+
+#: classwork.ioinvalidhandle
+msgid "an invalid file handle was specified"
+msgstr ""
+
+#: classwork.ioinvalidnumber
+msgid "an invalid number was encountered"
+msgstr ""
+
+#: classwork.ioinvalidoperation
+msgid "an invalid operation was attempted"
+msgstr ""
+
+#: classwork.ionofilehandle
+msgid "a handle must first be assigned to the file"
+msgstr ""
+
+#: classwork.iopathnotfound
+msgid "the specified path was not found"
+msgstr ""
+
+#: classwork.ioprinterpaper
+msgid "the printer is out of paper"
+msgstr ""
+
+#: classwork.ioreaderror
+msgid "reading from the device failed"
+msgstr ""
+
+#: classwork.ioreadonly
+msgid "the file was opened for reading only"
+msgstr ""
+
+#: classwork.ioremovingdirectory
+msgid "the current directory could not be removed"
+msgstr ""
+
+#: classwork.iorenamingfailed
+msgid "the specified file could not be renamed"
+msgstr ""
+
+#: classwork.iosectornotfound
+msgid "the appropriate sector on disk was not found"
+msgstr ""
+
+#: classwork.ioseekfailure
+msgid "the proper location on disk was not found"
+msgstr ""
+
+#: classwork.iosuccess
+msgid "the operation was successful"
+msgstr ""
+
+#: classwork.iotoomanyfiles
+msgid "there are already too many open files"
+msgstr ""
+
+#: classwork.iounknown
+msgid "an unknown I/O error occurred"
+msgstr ""
+
+#: classwork.iounknowncommand
+msgid "the command is unrecognized"
+msgstr ""
+
+#: classwork.iounknowndevice
+msgid "the specified device is unknown"
+msgstr ""
+
+#: classwork.iowriteerror
+msgid "writing to the device failed"
+msgstr ""
+
+#: classwork.iowriteonly
+msgid "the file was opened for writing only"
+msgstr ""
+
+#: classwork.lgercountername
+msgid "errors"
+msgstr ""
+
+#: classwork.lgerstringrepresentation
+msgid "error: %s"
+msgstr ""
+
+#: classwork.lgfecountername
+msgid "fatal errors"
+msgstr ""
+
+#: classwork.lgfestringrepresentation
+msgid "fatal: %s"
+msgstr ""
+
+#: classwork.lghtcountername
+msgid "hints"
+msgstr ""
+
+#: classwork.lghtstringrepresentation
+msgid "hint: %s"
+msgstr ""
+
+#: classwork.lgitcountername
+msgid "messages"
+msgstr ""
+
+#: classwork.lgntcountername
+msgid "notes"
+msgstr ""
+
+#: classwork.lgntstringrepresentation
+msgid "note: %s"
+msgstr ""
+
+#: classwork.lgwrcountername
+msgid "warnings"
+msgstr ""
+
+#: classwork.lgwrstringrepresentation
+msgid "warning: %s"
+msgstr ""
+
+#: classwork.llstdefaultnodeprintingprefix
+msgctxt "classwork.llstdefaultnodeprintingprefix"
+msgid "#9"
+msgstr ""
+
+#: classwork.llstdefaultnodeprintingsuffix
+msgctxt "classwork.llstdefaultnodeprintingsuffix"
+msgid ""
+msgstr ""
+
+#: classwork.llststringrepresentationplural
+msgctxt "classwork.llststringrepresentationplural"
+msgid "%s that contains %d nodes"
+msgstr ""
+
+#: classwork.llststringrepresentationsingular
+msgctxt "classwork.llststringrepresentationsingular"
+msgid "%s that contains %d node"
+msgstr ""
+
+#: classwork.nodestringrepresentationplural
+msgid "%s with %d children"
+msgstr ""
+
+#: classwork.nodestringrepresentationsingular
+msgid "%s with %d child"
+msgstr ""
+
+#: classwork.objerrorinitializing
+msgid "failed to create and initialize an instance of \"%s\""
+msgstr ""
+
+#: classwork.slstdefaultdelimiter
+msgid ","
+msgstr ""
+
+#: classwork.stbmstringrepresentation
+msgid "%s => %d"
+msgstr ""
+
+#: classwork.stlfstringrepresentation
+msgid "%s at index %d named \"%s\""
+msgstr ""
+
+#: classwork.vctrerrorallocatingmemory
+msgid "failed to allocate %d bytes to hold elements of %s"
+msgstr ""
+
+#: classwork.vctrstringrepresentationplural
+msgid "%s that contains %d items"
+msgstr ""
+
+#: classwork.vctrstringrepresentationsingular
+msgid "%s that contains %d item"
+msgstr ""
+
+#: parsing.letkstringrepresentation
+msgid "end of line (%d)"
+msgstr ""
+
+#: parsing.parsfatalunexpectedeos
+msgid "unexpected end of source"
+msgstr ""
+
+#: parsing.parssyntaxunexpectedtoken
+msgid "unexpected %s in source"
+msgstr ""
+
+#: parsing.pmsgstringrepresentation
+msgid "%s: %d: %s"
+msgstr ""
+
+#: parsing.setkstringrepresentation
+msgid "end of stream"
+msgstr ""
+
+#: parsing.smtkstringrepresentation
+msgid "%s in scope %X: %d"
+msgstr ""
+
+#: parsing.symperrorduplicateidentifier
+msgid "%s duplicates symbol that was previously declared in \"%s\" on line %d"
+msgstr ""
+
+#: parsing.toknstringrepresentation
+msgid "%s: %X"
+msgstr ""
+

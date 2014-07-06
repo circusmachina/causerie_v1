@@ -62,6 +62,16 @@ type AStringListItem = class(ANode)
     }
     function shallowCopyFrom(const Other: AnObject): boolean; override;
 
+    { Calculate the number of bytes required to stream the node, and just the
+      node.
+
+      This method builds upon the behavior inherited from
+      @link(ANode.selfStreamingLength): it calls the inherited routine, then
+      calculates the number of bytes required to stream its text and adds that
+      to the result, which is returned to the caller.
+    }
+    function selfStreamingLength: TStreamIOSize; override;
+
     { Write the node, and just the node, to the specified stream.  For more
       information on this method, see @link(ANode.writeSelfTo).
 
@@ -335,6 +345,17 @@ begin
   begin
     myText := AStringListItem(Other).text;
   end;
+end;
+
+// Calculate the number of bytes required to stream the node
+function AStringListItem.selfStreamingLength: TStreamIOSize;
+
+begin
+  // First call the inherited routine
+  result := inherited selfStreamingLength;
+
+  // Add the length of our text + length specifier + length checksum
+  inc(result, System.length(myText) + (sizeof(TStreamIOSize) * 2));
 end;
 
 // Write the node, and just the node, to the specified stream
