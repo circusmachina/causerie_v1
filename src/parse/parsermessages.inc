@@ -303,7 +303,7 @@ end;
   { This constant determines the format of the string returned by calls to
     @link(AParserNote.toString), @link(AParserHint.toString),
     @link(AParserWarning.toString), @link(AParserSyntaxError.toString), and
-    @link(AParserFatalError.toString).
+    @link(AParserFatalError.toString) when there is a valid (named) source.
 
     The first string placeholder is the name of the source stream being parsed,
     as determined by a call to @link(AnObject.name AStream.name).  If the source
@@ -365,8 +365,9 @@ end;
 function AParserNote.toString: AnsiString;
 
 begin
-  // Construct a message that includes source name and line number
-  if MyScanner <> nil then
+  // Construct a message that includes source name and line number, if available
+  if (MyScanner <> nil) and (MyScanner.Source <> nil) and
+    (MyScanner.Source.name <> '') then
     result := SysUtils.format(pmsgStringRepresentation, [
       MyScanner.Source.name, MyScanner.lineNumber,
       inherited toString
@@ -429,8 +430,9 @@ end;
 function AParserHint.toString: AnsiString;
 
 begin
-  // Construct a message that includes source name and line number
-  if MyScanner <> nil then
+  // Construct a message that includes source name and line number, if available
+  if (MyScanner <> nil) and (MyScanner.Source <> nil) and
+    (MyScanner.Source.name <> '') then
     result := SysUtils.format(pmsgStringRepresentation, [
       MyScanner.Source.name, MyScanner.lineNumber,
       inherited toString
@@ -493,8 +495,9 @@ end;
 function AParserWarning.toString: AnsiString;
 
 begin
-  // Construct a message that includes source name and line number
-  if MyScanner <> nil then
+  // Construct a message that includes source name and line number, if available
+  if (MyScanner <> nil) and (MyScanner.Source <> nil) and
+    (MyScanner.Source.name <> '') then
     result := SysUtils.format(pmsgStringRepresentation, [
       MyScanner.Source.name, MyScanner.lineNumber,
       inherited toString
@@ -557,8 +560,9 @@ end;
 function AParserSyntaxError.toString: AnsiString;
 
 begin
-  // Construct a message that includes source name and line number
-  if MyScanner <> nil then
+  // Construct a message that includes source name and line number, if available
+  if (MyScanner <> nil) and (MyScanner.Source <> nil) and
+    (MyScanner.Source.name <> '') then
     result := SysUtils.format(pmsgStringRepresentation, [
       MyScanner.Source.name, MyScanner.lineNumber,
       inherited toString
@@ -621,8 +625,9 @@ end;
 function AParserFatalError.toString: AnsiString;
 
 begin
-  // Construct a message that includes source name and line number
-  if MyScanner <> nil then
+  // Construct a message that includes source name and line number, if available
+  if (MyScanner <> nil) and (MyScanner.Source <> nil) and
+    (MyScanner.Source.name <> '') then
     result := SysUtils.format(pmsgStringRepresentation, [
       MyScanner.Source.name, MyScanner.lineNumber,
       inherited toString

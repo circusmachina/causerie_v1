@@ -19,7 +19,7 @@
 // ALog ************************************************************************
 { This class represents a generic log, which can be used to output status and
   error messages to an assigned stream.  Any type of information can be logged
-  to @link(ALog) by means of @link(ALog.write); however, when the item to be
+  to @link(ALog) by means of @link(ALog.print); however, when the item to be
   logged is an instance of @link(ALoggedItem) or its descendants, then the
   logging of that instance will be recorded in the list of counters maintained
   by the log.
@@ -29,7 +29,7 @@ type ALog = class(APrintingObject)
     { Stores counters for errors, hints, warnings, etc. }
     MyCounters: ACounterList;
     { Refers to the stream used for output from the log }
-    MyOutput: AStream;
+    MyOutput: ATextOutputStream;
     { Indicates whether the log owns its output stream, and whether it will
       free this stream when the log itself is destroyed.
     }
@@ -44,10 +44,10 @@ type ALog = class(APrintingObject)
       instances of a log to be constructed and assigned to a stream like so:
       @longcode(#
         // Log to 'stdout'
-        MyLog := ALog.toStream(AStandardOutputStream.new, true);
+        MyLog := ALog.toStream(AConsoleOutputStream.new, true);
       #)
     }
-    constructor toStream(const Dest: AStream;
+    constructor toStream(const Dest: ATextOutputStream;
       const ownStream: boolean = false); virtual;
 
     { Initializer }
@@ -81,12 +81,12 @@ type ALog = class(APrintingObject)
 
       Internally, after checking to see if there are items in @code(items)
       that are instances of @link(ALoggedItem) and incrementing the counters
-      associated with any found, this method calls @link(AStream.printEach) on
-      its output stream.
+      associated with any found, this method calls
+      @link(ATextOutputStream.printEach) on its output stream.
 
       @return(The total number of bytes written to the log's output stream.)
     }
-    function write(const items: array of const): TStreamIOSize; virtual;
+    function print(const items: array of const): TStreamIOSize; virtual;
 
   // CanPrint implementation ---------------------------------------------------
     { Print a string representation of the log to the specified stream.
@@ -99,7 +99,7 @@ type ALog = class(APrintingObject)
 
       @return(The total number of bytes printed to @code(Dest).)
     }
-    function printTo(const Dest: AStream;
+    function printTo(const Dest: ATextOutputStream;
       prefix: AnsiString = '';
       suffix: AnsiString = ''): TStreamIOSize; override;
 
@@ -126,7 +126,7 @@ type ALog = class(APrintingObject)
       If @link(ALog.ownsOutput) is @true, then the stream will be freed when the
       log is, itself, freed.
     }
-    function Output: AStream; virtual;
+    function Output: ATextOutputStream; virtual;
 
     { Retrieve whether or not the log assumes ownership of its output stream.
 
@@ -225,7 +225,7 @@ end;
 
    \return A new instance of AMessageLog on success; #nil on failure.
 *}
-constructor ALog.toStream(const Dest: AStream;
+constructor ALog.toStream(const Dest: ATextOutputStream;
   const ownStream: boolean = false);
 
 begin
@@ -275,7 +275,7 @@ begin
 end;
 
 /// Write the specified items to the log
-function ALog.write(const items: array of const): TStreamIOSize;
+function ALog.print(const items: array of const): TStreamIOSize;
 
 var
   // A loop counter
@@ -319,7 +319,7 @@ end;
    \return The total number of bytes written to \p Dest.  This value will be
    zero (0) if \p Dest is #nil.
 *}
-function ALog.printTo(const Dest: AStream;
+function ALog.printTo(const Dest: ATextOutputStream;
   prefix: AnsiString = '';
   suffix: AnsiString = ''): TStreamIOSize;
 
@@ -346,7 +346,7 @@ begin
 
   if thisName <> '' then
   begin
-    Result := ACounter(MyCounters.fetch(thisName));
+    Result := ACounter(MyCounters.fetchLeaf(thisName));
   end;
 end;
 
@@ -358,7 +358,7 @@ begin
 end;
 
 /// Retrieves the output stream used by the log
-function ALog.Output: AStream;
+function ALog.Output: ATextOutputStream;
 
 begin
   Result := MyOutput;
@@ -389,7 +389,9 @@ begin
 
   if thisName <> '' then
   begin
-    MyOutput := AFileOutputStream.toFileNamed(thisName, overwrite);
+    MyOutput := AConsoleOutputStream.around(
+      AFileOutputStream.toFileNamed(thisName, overwrite)
+    );
     myOwnOutput := true;
   end;
 end;
@@ -409,7 +411,7 @@ constructor AConsoleLog.toStdOut;
 begin
   inherited new;
 
-  MyOutput := AStandardOutputStream.new;
+  MyOutput := AConsoleOutputStream.around(AStandardOutputStream.new);
   myOwnOutput := true;
 end;
 
@@ -418,7 +420,7 @@ constructor AConsoleLog.toStdErr;
 begin
   inherited new;
 
-  MyOutput := AStandardErrorStream.new;
+  MyOutput := ATextOutputStream.around(AStandardErrorStream.new);
   myOwnOutput := true;
 end;
 
@@ -429,7 +431,7 @@ constructor ABufferedLog.new;
 begin
   inherited new;
 
-  MyOutput := AStringStream.new('');
+  MyOutput := ATextOutputStream.around(AStringStream.new(''));
   myOwnOutput := true;
 end;
 {$ENDIF}

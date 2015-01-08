@@ -55,6 +55,18 @@ type APrintingObject = class(AnObject, CanPrint)
 
       The base implmentation of this method simply calls
       @link(APrintingObject.displayName) and returns the result of that call.
+
+      Descendant classes should override this method as follows: @unorderedList(
+        @item(If the instance contains a value of some kind, a string
+          representation of that value should be returned.)
+        @item(If the instance associates a search key of some kind with a value,
+          then a string representation of both the search key and the value
+          should be returned.)
+        @item(Otherwise, a descriptive representation of the class itself should
+          be returned.)
+      )
+
+      Adhering to the above two criteria will greatly facilitate debugging.
     }
     function toString: string; override;
 
@@ -66,7 +78,7 @@ type APrintingObject = class(AnObject, CanPrint)
 
       @returns(The total number of bytes written to @code(Dest).)
     }
-    function printTo(const Dest: AStream;
+    function printTo(const Dest: ATextOutputStream;
       prefix: AnsiString = '';
       suffix: AnsiString = ''): TStreamIOSize; virtual;
 end;
@@ -82,6 +94,7 @@ begin
   result := inherited init;
 end;
 
+// Construct a display name for the object
 function APrintingObject.displayName: string;
 
 begin
@@ -96,13 +109,15 @@ begin
   end;
 end;
 
+// Construct a string representation of the object
 function APrintingObject.toString: string;
 
 begin
   result := Self.displayName;
 end;
 
-function APrintingObject.printTo(const Dest: AStream;
+// Print a string representation of the object to the specified stream
+function APrintingObject.printTo(const Dest: ATextOutputStream;
   prefix: AnsiString = '';
   suffix: AnsiString = ''): TStreamIOSize;
 

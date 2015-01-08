@@ -3,8 +3,8 @@
 
  This file is part of GtkSourceView
 
- Author: Michael Malicoat
- Copyright (C) 2014 Michael Malicoat <michael@circusmachina.com>
+ Author: Yevgen Muntyan <muntyan@math.tamu.edu>
+ Copyright (C) 2007 Yevgen Muntyan <muntyan@math.tamu.edu>
 
  GtkSourceView is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
@@ -13,242 +13,98 @@
 
  GtkSourceView is distributed in the hope that it will be useful,
  but WITHOUT ANY WARRANTY; without even the implied warranty of
- MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.    See the GNU
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  Lesser General Public License for more details.
 
  You should have received a copy of the GNU Lesser General Public
  License along with this library; if not, write to the Free Software
- Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA    02110-1301    USA
+ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 -->
-<language id="causerie" _name="Causerie" version="2.0" _section="Sources">
-    <metadata>
-        <property name="mimetypes">text/x-causeriesrc;text/x-csrc</property>
-        <property name="globs">*.cause</property>
-        <property name="line-comment-start">//</property>
-        <property name="block-comment-start">/*</property>
-        <property name="block-comment-end">*/</property>
-    </metadata>
+<language id="causerie" _name="causerie" version="2.0" _section="Sources">
+  <metadata>
+    <property name="mimetypes">text/x-causeriesrc;text/x-objcsrc</property>
+    <property name="globs">*.cause</property>
+    <property name="line-comment-start">//</property>
+    <property name="block-comment-start">/*</property>
+    <property name="block-comment-end">*/</property>
+  </metadata>
 
-    <styles>
-        <style id="comment" _name="Comment" map-to="def:comment"/>
-        <style id="preprocessor" _name="Preprocessor" map-to="def:preprocessor"/>
-        <style id="string" _name="String" map-to="def:string"/>
-        <style id="keyword" _name="Keyword" map-to="def:keyword"/>
-        <style id="special" _name="Special" map-to="def:operator"/>
-        <style id="type" _name="Data type" map-to="def:type"/>
-        <style id="constant" _name="Constant" map-to="def:special-constant"/>
-        <style id="symbols" _name="Symbol" map-to="def:identifier"/>
-        <style id="parameter-tags" name="Parameter tag" map-to="def:function"/>
-        <style id="floating-point" _name="Floating point number" map-to="def:floating-point"/>
-        <style id="decimal" _name="Decimal number" map-to="def:decimal"/>
-        <style id="octal" _name="Octal number" map-to="def:base-n-integer"/>
-        <style id="hexadecimal" _name="Hexadecimal number" map-to="def:base-n-integer"/>
-        <style id="error" name="Error" map-to="def:error"/>
-    </styles>
+  <styles>
+    <style id="keyword" _name="Keyword" map-to="c:keyword"/>
+    <style id="type" _name="Data Type" map-to="c:type"/>
+    <style id="common-defines" _name="Common Defines" map-to="c:common-defines"/>
+    <style id="string" _name="String" map-to="c:string"/>
+  </styles>
 
-    <definitions>
-        <!-- Comments -->
-        <!-- C-style comments, borrowed verbatim from c.lang -->
-        <context id="comment" style-ref="comment" end-at-line-end="true" class="comment" class-disabled="no-spell-check">
-            <start>//</start>
-            <include>
-                <context ref="def:in-line-comment"/>
-            </include>
-        </context>
-
-        <context id="comment-multiline" style-ref="comment" class="comment" class-disabled="no-spell-check">
-            <start>/\*</start>
-            <end>\*/</end>
-            <include>
-                <context ref="def:in-comment"/>
-            </include>
-        </context>
-
-        <context id="close-comment-outside-comment" style-ref="error">
-            <match>\*/(?!\*)</match>
-        </context>
-        
-        <!-- Preprocessor statements, borrowed and modified from html.lang.  
-             Unlike HTML, we do not allow spaces after the opening <, nor again 
-             before the closing >.  This prevents confusion between preprocessor 
-             tags and standard library comparison "operators".
-        -->
-        <context id="preprocessor" style-ref="preprocessor" class="no-spell-check">
-            <start>&lt;\$/?[a-z0-9_-]+</start>
-            <end>/?&gt;</end>
-            <include>
-                <context sub-pattern="0" where="start" style-ref="tag"/>
-                <context sub-pattern="0" where="end" style-ref="tag"/>
-                <context ref="html:generic-tag"/>
-            </include>
-        </context>        
-        
-        <!-- Strings -->
-        <context id="string" style-ref="string" class="string" class-disabled="no-spell-check">
-            <start>'</start>
-            <end>'</end>
-        </context>
-
-        <!-- Numeric constants, borrowed verbatim from c.lang -->
-        <!-- http://www.lysator.liu.se/c/ANSI-C-grammar-l.html -->
-        <context id="float" style-ref="floating-point">
-            <match extended="true">
-                (?&lt;![\w\.])
-                ((\.[0-9]+ | [0-9]+\.[0-9]*) ([Ee][+-]?[0-9]*)? |
-                 ([0-9]+[Ee][+-]?[0-9]*))
-                [fFlL]?
-                (?![\w\.])
-            </match>
-        </context>
-
-        <context id="hexadecimal" style-ref="hexadecimal">
-            <match extended="true">
-                (?&lt;![\w\.])
-                0[xX][a-fA-F0-9]+[uUlL]*
-                (?![\w\.])
-            </match>
-        </context>
-
-        <context id="invalid-hexadecimal" style-ref="error">
-            <match extended="true">
-                (?&lt;![\w\.])
-                0[xX][a-fA-F0-9]*[g-zG-Z][a-zA-Z0-9]*[uUlL]*
-                (?![\w\.])
-            </match>
-        </context>
-
-        <context id="octal" style-ref="octal">
-            <match extended="true">
-                (?&lt;![\w\.])
-                0[0-7]+[uUlL]*
-                (?![\w\.])
-            </match>
-        </context>
-
-        <context id="invalid-octal" style-ref="error">
-            <match extended="true">
-                (?&lt;![\w\.])
-                0[0-7]*[89][0-9]*[uUlL]*
-                (?![\w\.])
-            </match>
-        </context>
-
-        <context id="decimal" style-ref="decimal">
-            <match extended="true">
-                (?&lt;![\w\.])
-                (0|[1-9][0-9]*)[uUlL]*
-                (?![\w\.])
-            </match>
-        </context>
-
-        <!-- Language-defined keywords -->
+  <definitions>
+    <!-- ObjC-specific stuff (i.e. stuff which is not C) -->
+    <context id="causerie-header">
+      <include>
         <context id="keywords" style-ref="keyword">
-            <keyword>class</keyword>
-            <keyword>implements</keyword>
-            <keyword>implementation</keyword>
-            <keyword>interface</keyword>
-            <keyword>method</keyword>
-            <keyword>Method</keyword>
-            <keyword>native</keyword>
-            <keyword>private</keyword>
-            <keyword>public</keyword>
-            <keyword>return</keyword>
-            <keyword>subclass</keyword>
-            <keyword>var</keyword>
-            <keyword>wraps</keyword>
+          <prefix>\@</prefix>
+          <keyword>interface</keyword>
+          <keyword>protocol</keyword>
+          <keyword>implementation</keyword>
+          <keyword>end</keyword>
+          <keyword>class</keyword>
+          <keyword>selector</keyword>
+          <keyword>private</keyword>
+          <keyword>protected</keyword>
+          <keyword>public</keyword>
         </context>
 
-        <!-- Special method names defined by standard runtime -->
-        <context id="special-methods" style-ref="special">
-            <keyword>and</keyword>
-            <keyword>forEach</keyword>
-            <keyword>is</keyword>            
-            <keyword>mod</keyword>
-            <keyword>not</keyword>
-            <keyword>or</keyword>
-            <keyword>shl</keyword>
-            <keyword>shr</keyword>
-            <keyword>shrz</keyword>
-            <keyword>xor</keyword>
-        </context>
-
-        <!-- Special parameter tags defined by standard runtime -->
-        <context id="special-ptags" style-ref="keyword">
-            <keyword>ifFalse</keyword>
-            <keyword>ifTrue</keyword>
-            <keyword>implements</keyword>
-            <keyword>whileFalse</keyword>            
-            <keyword>whileTrue</keyword>
-        </context>
-
-        <!-- Intrinsic types -->
         <context id="types" style-ref="type">
-            <keyword>array</keyword>
-            <keyword>block</keyword>
-            <keyword>boolean</keyword>
-            <keyword>id</keyword>
+          <keyword>bool</keyword>
         </context>
 
-        <!-- Runtime types -->
-        <context id="runtime-types" style-ref="type">
-            <keyword>byte</keyword>
-            <keyword>byte!</keyword>
-            <keyword>word</keyword>
-            <keyword>word!</keyword>
-            <keyword>integer</keyword>
-            <keyword>integer!</keyword>
-            <keyword>long</keyword>
-            <keyword>long!</keyword>
-            <keyword>float</keyword>
-            <keyword>double</keyword>
-            <keyword>map</keyword>
-            <keyword>string</keyword>
+        <context id="causerie-string-literal" style-ref="string" end-at-line-end="true" class="string" class-disabled="no-spell-check">
+          <start>\@"</start>
+          <end>"</end>
+          <include>
+            <context ref="c:string:*"/>
+          </include>
         </context>
-        
-        <!-- Constants defined by the runtime -->
-        <context id="runtime-constants" style-ref="constant">
-            <keyword>nil</keyword>
-            <keyword>true</keyword>
-            <keyword>false</keyword>
-            <keyword>Self</keyword>
-            <keyword>Super</keyword>
+      </include>
+    </context>
+
+    <!-- causerie-specific stuff (i.e. stuff which is not C), which isn't
+         good to highlight in C headers -->
+    <context id="causerie-source">
+      <include>
+        <context id="causerie-keywords" style-ref="keyword">
+          <keyword>Self</keyword>
+          <keyword>Super</keyword>
         </context>
 
-        <!-- Symbol definitions -->
-        <context id="symbols" style-ref="symbols">
-            <start>#</start>
-            <end>(\w)+\b</end>
-        </context>
-        
-        <!-- Parameter tags -->
-        <context id="parameter-tags" style-ref="parameter-tags">
-            <match extended="true">\w+:</match>
-        </context>
-
-        <!-- Main context -->
-        <context id="causerie" class="no-spell-check">
-            <include>
-                <context ref="comment"/>
-                <context ref="comment-multiline"/>
-                <context ref="close-comment-outside-comment"/>
-                <context ref="preprocessor"/>
-                <context ref="string"/>
-                <context ref="hexadecimal"/>
-                <context ref="invalid-hexadecimal"/>
-                <context ref="octal"/>
-                <context ref="invalid-octal"/>
-                <context ref="decimal"/>
-                <context ref="keywords"/>
-                <context ref="special-methods"/>
-                <context ref="special-ptags"/>
-                <context ref="types"/>
-                <context ref="runtime-types"/>
-                <context ref="runtime-constants"/>
-                <context ref="symbols"/>
-                <context ref="parameter-tags"/>
-            </include>
+        <context id="causerie-types" style-ref="type">
+          <keyword>Array</keyword>
+          <keyword>Block</keyword>
+          <keyword>Class</keyword>
+          <keyword>id</keyword>
+          <keyword>MetaClass</keyword>
+          <keyword>Object</keyword>
+          <keyword>Protocol</keyword>
+          <keyword>string</keyword>
         </context>
 
-    </definitions>
+        <context id="causerie-common-defines" style-ref="common-defines">
+          <keyword>false</keyword>
+          <keyword>ifError</keyword>
+          <keyword>forEach</keyword>
+          <keyword>nil</keyword>
+          <keyword>true</keyword>
+        </context>
+      </include>
+    </context>
+
+    <!-- actual language definition: causerie-specific stuff plus everything from C -->
+    <context id="causerie" class="no-spell-check">
+      <include>
+        <context ref="causerie-source"/>
+        <context ref="causerie-header"/>
+        <context ref="c:c"/>
+      </include>
+    </context>
+  </definitions>
 </language>

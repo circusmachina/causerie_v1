@@ -110,7 +110,14 @@ begin
 
   // Check to see whether we have a valid output stream
   if MyOutput = nil then
-    result := -1;
+  begin
+    // Check to see if we can inherit from the parent
+    if (MyParent <> nil) and (MyParent is ASourceParser) then
+      MyOutput := ASourceParser(MyParent).Output
+
+    else
+      result := -1;
+  end;
 end;
 
 // Parse the source into the specified output stream

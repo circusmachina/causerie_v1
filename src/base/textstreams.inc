@@ -75,6 +75,144 @@ type ATextInputStream = class(AStreamWrapper)
     function readLine(var dest: AnsiString;
       const lineTerminator: string = System.lineEnding): TStreamIOSize;
 end;
+
+{ This class serves as the basis for a class which wraps around other
+  instances of @link(AStream) and provides the ability to treat the data
+  to be written to the stream as text.  In particular, this class supports
+  printing ASCII- or UTF-8-encoded streams, as well as Unicode strings and
+  @code(WideStrings).
+}
+type ATextOutputStream = class(AStreamWrapper)
+  public
+    { Write @code(count) bytes from @code(source) to the stream.
+
+      This method simply passes the read call through to
+      @link(AStreamWrapper.Target).  It does not attempt to interpret the
+      data written.  To print one or more strings, call
+      @link(ATextOutputStream.print) or @link(ATextOutputStream.printEach).
+
+      @return(The total number of bytes written to the stream.  This value may
+      be less than @code(count) if the end of the stream was encountered while
+      writing.)
+    }
+    function write(const count: TStreamIOSize; const source): TStreamIOSize;
+      override;
+
+    { Print the specificed string to the stream.
+
+      This method will print the contents of @code(str) to the stream.  It is
+      primarily designed to be used with text-based output streams, such as
+      @link(AStandardOutputStream), since it does not record the length of the
+      string so that it can be read later.  To write a string, including its
+      length, to the stream, use @link(AStream.writeString) instead.
+
+      @return(The total number of bytes printed to the stream.  This value will
+      be zero if @code(str) is an empty string.)
+    }
+    function print(const str: AnsiString): TStreamIOSize; virtual;
+
+    { Print each value in @code(vals) to the stream.
+
+      This method is defined and implemented as a convenience function; it
+      writes a string representation of each variable provided in @code(vals) to
+      the stream.
+
+      It is possible to pass instances of objects to this routine, but they
+      must be members of a class that implements @link(CanPrint).  This routine
+      will call the @code(printTo) method for all such instances passed.  All
+      other object instances passed to this routine are ignored.
+
+      If a class reference is passed to this routine, it will output a string
+      containing the name of the class.
+
+      @return(The total number of bytes printed to the stream.  This value may
+      be less than expected if certain items in @code(vals) were skipped.)
+    }
+    function printEach(const vals: array of const): TStreamIOSize; virtual;
+
+    { Print the selected string to the stream, breaking into lines and then
+      wrapping and justifying those lines as necessary.
+
+      @code(str) is broken into one or more lines that are no more than
+      @code(thisLineLength) characters in length.  If @code(thisLineLength) is
+      zero (0), then this method uses the value of
+      @link(ATextOutputStream.lineLength) instead.
+
+      @code(str) is broken into lines only where the characters specified by
+      @code(breakCharacters) are encountered within the string.  The default
+      characters in @link(tosWrapDefaultBreakCharacters) can be used if the
+      caller does not wish to specify other characters.  In any case,
+      @code(breakCharacters) should contain ASCII or UTF-8 encoded characters.
+      Only the first such character from each element in @code(breakCharacters)
+      is used; if the strings in @code(breakCharacters) contain more than one
+      character, the extraneous characters are ignored.
+
+      The first line that is printed is padded on the left by a repeating
+      sequence of the characters specified by @code(padCharacter), which should
+      contain an ASCII or UTF-8 encoded character.  Only the first such
+      character from @code(padCharacter) is used; if it contains others, they
+      are ignored.  The number of times @code(padCharacter) is used for the
+      first line is determined by @code(firstLineStartColumn); if that value is
+      zero, then the first line is not padded.
+
+      The remaining lines that are printed are padded on the left by the same
+      repeating sequence of characters specified by @code(padCharacter).  The
+      number of times @code(padCharacter) is used for each remaining line is
+      determined by @code(remainingLinesStartColumn); if that value is zero,
+      the remaining lines are not padded.
+
+      If @code(padCharacter) is an empty string, the value specified by
+      @link(tosWrapDefaultPadCharacter) is used.
+
+      For more information on the various parameters accepted by this routine,
+      see @link(AStringList.wrapString).
+
+      @return(The total number of bytes printed to the stream.  If @code(str) is
+      an empty string, this method does nothing and returns zero (0).)
+    }
+    function printWrapped(const str: AnsiString;
+      const breakCharacters: array of string;
+      thisLineLength: longword = 0;
+      const firstLineStartColumn: longword = 0;
+      const remainingLinesStartColumn: longword = 0;
+      padCharacter: string = '';
+      const lineBreakCharacter: string = System.lineEnding): TStreamIOSize;
+
+    // Properties --------------------------------------------------------------
+    { Determine the maximum length of a printed line, in characters.
+
+      The value returned by this method indicates the maximum number of
+      characters that may be printed on a single line before the line is
+      forcibly wrapped by the underlying device.
+
+      The base implementation of this method simply returns the value of
+      @link(tosDefaultLineLength), but descendant classes may override this
+      behavior to return a different value.
+
+      This value is used by @link(ATextOutputStream.printWrapped) to wrap text
+      so that it fits within the boundaries of the target stream.
+    }
+    function lineLength: longword; virtual;
+end;
+
+const
+  { This constant controls the maximum length of a line, in characters, that is
+    wrapped by @link(ATextOutputStream.printWrapped).
+  }
+  tosDefaultLineLength = 79;
+
+  { This array contains the default characters at which a line wrapped by
+    @link(ATextOutputStream.printWrapped) is broken.
+  }
+  tosWrapDefaultBreakCharacters: array[0..2] of string = (
+    ' ', '-', System.lineEnding);
+{$ENDIF}
+{$IFDEF ReadResourceStrings}
+  { This constant specifies the default padding character used by
+    @link(ATextOutputStream.printWrapped) in order to align each line to a
+    specific column.
+  }
+  tosWrapDefaultPadCharacter = ' ';
 {$ENDIF}
 {$IFDEF ReadImplementation}
 // ATextInputStream ************************************************************
@@ -99,6 +237,8 @@ var
   ch: string;
   // Stores the length of a character read from the stream
   charLength: integer;
+  // Stores the difference between the bytes read and those needed
+  difference: integer;
 
 begin
   result := 0;
@@ -118,16 +258,17 @@ begin
       break;
 
     // Read the character; at worst, we get 4 ASCII characters
-    MyTarget.read(sizeof(longword), ch[1]);
+    difference := MyTarget.read(sizeof(longword), ch[1]);
 
     // Get the length of the first character in the string
     charLength := Charstring.characterLength(ch);
+
     // Copy that number of bytes to our destination
     dest := dest + System.copy(ch, 1, charLength);
     inc(result);
 
     // Rewind the stream by the difference
-    MyTarget.rewindBy(sizeof(longword) - charLength);
+    MyTarget.rewindBy(difference - charLength);
     dec(count);
   end;
 end;
@@ -161,6 +302,163 @@ begin
     dest := dest + ch;
     inc(result);
   end;
+end;
+
+// ATextOutputStream ***********************************************************
+// Write to the stream
+function ATextOutputStream.write(const count: TStreamIOSize;
+  const source): TStreamIOSize;
+
+begin
+  result := 0;
+
+  if MyTarget <> nil then
+    result := MyTarget.write(count, source);
+end;
+
+{* Writes a string to the stream.  This method calls the abstract method
+   AStream::write() to perform the actual writing.
+
+   \return A value indicating the number of bytes written to the stream.  This
+   value may be zero if the string was empty.
+*}
+function ATextOutputStream.print(const str: AnsiString): TStreamIOSize;
+
+begin
+  result := 0;
+  if str <> '' then
+    result := Self.write(System.length(str), str[1]);
+end;
+
+{* Converts each member of \p vals to a string and writes it to the stream.
+   This method is primarily designed to make it easy to quickly output data
+   from various sources to a console display or text file; the strings it
+   produces are NOT preceded by length specifiers and so are unsuitable for
+   later retrieval from the stream.
+
+   For members of \p vals that are instances of AnObject which also implement
+   CanPrint, this routine calls CanPrint::printTo() in order to produce
+   output for that object.
+
+   \return The total number of bytes written to the stream.  This value should
+   be the sum total of the memory occupied by all the members of \p vals, but
+   may be less than expected if an error occurred while writing.
+*}
+function ATextOutputStream.printEach(const vals: array of const): TStreamIOSize;
+
+var
+  // Loop counter
+  i: longword;
+
+begin
+  result := 0;
+
+  if system.length(vals) > 0 then
+  begin
+    for i := 0 to high(vals) do
+    begin
+      case vals[i].vtype of
+        vtInteger:
+          result := result + Self.print(intToStr(vals[i].vinteger));
+
+        vtBoolean:
+          if vals[i].vboolean then
+            result := result + Self.print('true')
+
+          else
+            result := result + Self.print('false');
+
+        vtChar:
+          result := result + Self.print(vals[i].vchar);
+
+        vtExtended:
+          result := result + Self.print(floatToStr(vals[i].vextended^));
+
+        vtString:
+          result := result + Self.print(vals[i].vstring^);
+
+        vtPointer:
+          result := result + Self.print(intToHex(int64(vals[i].vpointer),
+            (sizeof(int64) div 4)));
+
+        vtPChar:
+          result := result + Self.print(vals[i].vpchar^);
+
+        vtObject:
+          if (vals[i].vobject <> nil) and (vals[i].vobject is AnObject) then
+            if AnObject(vals[i].vobject) is CanPrint then
+              with vals[i].vobject as CanPrint do
+                result := result + printTo(Self);
+
+        vtClass:
+          if vals[i].vclass <> nil then
+            result := result + Self.print(vals[i].vclass.className)
+
+          else
+            result := result + Self.print('Class: NIL');
+
+        vtAnsiString:
+          result := result + Self.print(AnsiString(vals[i].vansistring));
+
+        vtWideString:
+          result := result + Self.print(WideString(vals[i].vWideString));
+
+        vtUnicodeString:
+          result := result + Self.print(UnicodeString(vals[i].vUnicodeString));
+
+        vtInt64:
+          result := result + Self.print(intToStr(vals[i].vInt64^));
+
+        vtQWord:
+          result := result + Self.print(intToStr(vals[i].vQWord^));
+      end;
+    end;
+  end;
+end;
+
+// Print the selected item to the stream, wrapping as necessary
+function ATextOutputStream.printWrapped(const str: AnsiString;
+  const breakCharacters: array of string;
+  thisLineLength: longword = 0;
+  const firstLineStartColumn: longword = 0;
+  const remainingLinesStartColumn: longword = 0;
+  padCharacter: string = '';
+  const lineBreakCharacter: string = System.lineEnding): TStreamIOSize;
+
+var
+  // Refers to the lines of wrapped text
+  Lines: AStringList;
+
+begin
+  result := 0;
+
+  if str = '' then
+    exit;
+
+  if thisLineLength = 0 then
+    thisLineLength := Self.lineLength;
+
+  if padCharacter = '' then
+    padCharacter := tosWrapDefaultPadCharacter;
+
+  Lines := AStringList.wrapString(str, breakCharacters, thisLineLength,
+    firstLineStartColumn, remainingLinesStartColumn, padCharacter);
+  if Lines = nil then
+    exit;
+
+  { We call 'Lines.LastItem.printTo' to bypass the default behavior of
+    AStringList.printTo, which will include a description of the list itself.
+  }
+  result := Lines.LastItem.printTo(Self, '', lineBreakCharacter);
+  Lines.free;
+end;
+
+// Properties ------------------------------------------------------------------
+// Retrieve the maximum length of a line before it is forcibly wrapped
+function ATextOutputStream.lineLength: longword;
+
+begin
+  result := tosDefaultLineLength;
 end;
 {$ENDIF}
 

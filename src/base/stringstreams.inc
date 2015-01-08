@@ -29,6 +29,8 @@
 }
 type AStringStream = class(AStream, CanStream, CanPrint)
   protected
+    { Stores the name of the stream. }
+    myName: string;
     { Stores the string data used by the stream. }
     myString: AnsiString;
     { Stores the current position within the stream. }
@@ -137,11 +139,32 @@ type AStringStream = class(AStream, CanStream, CanPrint)
 
       @return(The total number of bytes printed to @code(Dest).)
     }
-    function printTo(const Dest: AStream;
+    function printTo(const Dest: ATextOutputStream;
       prefix: AnsiString = '';
       suffix: AnsiString = ''): TStreamIOSize; virtual;
 
   // Properties ----------------------------------------------------------------
+    { Retrieve the name of the stream.
+
+      This method overrides the behavior inherited from
+      @link(AnObject.name): instead of return the class name of the stream, it
+      returns the name set by a previous call to
+      @link(AStringStream.setName).  If no such call has been made, an empty
+      string is returned.
+    }
+    function name: string; override;
+
+    { Set the name of the stream.
+
+      This method allows the caller to set the name that is reported when
+      @link(AStringStream.name) is called.  This behavior is intended to allow
+      a descriptive name to be given to instances of @link(AStringStream) for
+      display in debug and diagnostic messages.
+
+      @return(The previous value of @link(AStringStream.name).)
+    }
+    function setName(const newName: string): string; virtual;
+
     { Retrieve the current position within the stream.  This is the location at
       which the next read or write operation will occur.
 
@@ -204,6 +227,7 @@ end;
 function AStringStream.init: boolean;
 
 begin
+  myName := '';
   myString := '';
   myPosition := 0;
   result := inherited init;
@@ -328,7 +352,7 @@ begin
   end;
 end;
 
-// IsStreamable implementation -------------------------------------------------
+// CanStream implementation ----------------------------------------------------
 // Determine the size, in bytes, of the data to be streamed
 function AStringStream.streamingLength: TStreamIOSize;
 
@@ -367,7 +391,7 @@ begin
     result := Source.readString(myString);
 end;
 
-// IsPrintable implementation --------------------------------------------------
+// CanPrint implementation -----------------------------------------------------
 {* Returns a string representation of the stream.  This is merely a reference to
    the string being manipulated by the stream.
 
@@ -380,12 +404,12 @@ begin
 end;
 
 {* Prints a string representation of the stream to \p Dest.  This routine
-   calls AStream.write.
+   calls AStream.printEach.
 
    \return The total number of bytes written to \p Dest, which will be zero (0)
    if \p Dest is #nil.
 *}
-function AStringStream.printTo(const Dest: AStream;
+function AStringStream.printTo(const Dest: ATextOutputStream;
   prefix: AnsiString = '';
   suffix: AnsiString = ''): TStreamIOSize;
 
@@ -397,6 +421,21 @@ begin
 end;
 
 // Properties ------------------------------------------------------------------
+// Retrieve the name of the stream
+function AStringStream.name: string;
+
+begin
+  result := myName;
+end;
+
+// Set the name of the stream
+function AStringStream.setName(const newName: string): string;
+
+begin
+  result := myName;
+  myName := newName;
+end;
+
 {* Retrieves the current position within the stream.
 
    \return The current position within the stream, which is the number of bytes

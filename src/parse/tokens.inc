@@ -89,7 +89,7 @@ type AToken = class(ANode)
       token may appear at the current source location; in other words, it
       allows a parser to check syntax.
     }
-    function isPartOf(const Rule: ASyntaxRule): boolean; virtual;
+    function isPartOf(const Rule: ASyntaxRule): boolean; overload; virtual;
 
     { Construct a shallow copy of the other object.
 

@@ -39,7 +39,7 @@ type ASourceScanner = class(AScanner)
       requires a language definition to use in order to tokenize the source.
     }
     constructor forSource(const ThisSource: ATextInputStream;
-      const ThisLanguage: AParsedLanguage); reintroduce; virtual;
+      const ThisLanguage: AParsedLanguage); overload; virtual;
 
     { Initializer }
     function init: boolean; override;
@@ -85,8 +85,9 @@ constructor ASourceScanner.forSource(const ThisSource: ATextInputStream;
   const ThisLanguage: AParsedLanguage);
 
 begin
-  inherited forSource(ThisSource);
+  inherited new;
 
+  MySource := ThisSource;
   MyLanguage := ThisLanguage;
 end;
 
@@ -111,8 +112,8 @@ begin
     exit;
 
   // Do nothing if we've reached the end of the source
-  if (MyCurrentToken <> nil) and (MyCurrentToken.opcode = TOKCAT_EOS) then
-    exit;
+  //if (MyCurrentToken <> nil) and (MyCurrentToken.opcode = TOKCAT_EOS) then
+  //  exit;
 
   // This loop will be executed at least once
   repeat
@@ -142,10 +143,18 @@ begin
     if MyCurrentToken.opcode = TOKCAT_EOL then
       inc(myLineNumber, ALineEndingTokenFromSource(MyCurrentToken).lineCount);
 
-    // Are we discarding whitespace
+  {$IFDEF DEBUG}
+    writeln(Self.className, '.next(): ', MyCurrentToken.toString,
+      ' (', MyCurrentToken.className, ')');
+  {$ENDIF}
+
+    // Are we discarding whitespace?
     if (MyCurrentToken.opcode = TOKCAT_SPACE) and
       (SCAN_NO_WHITESPACE in myTokenBehaviors) then
     begin
+    {$IFDEF DEBUG}
+      writeln(#9'* TOKEN DISCARDED');
+    {$ENDIF}
       MyCurrentToken.free;
       MyCurrentToken := nil;
     end

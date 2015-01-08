@@ -29,11 +29,11 @@
 type AConsoleApplication = class(AnApplication)
   protected
     { Refers to the stream used for standard output }
-    MyConsoleOut: AStream;
+    MyConsoleOut: ATextOutputStream;
     { Refers to the stream used for standard input }
-    MyConsoleIn: AStream;
+    MyConsoleIn: ATextInputStream;
     { Refers to the stream used for standard error output }
-    MyErrorOut: AStream;
+    MyErrorOut: ATextOutputStream;
 
   public
     { Initializer }
@@ -73,14 +73,14 @@ type AConsoleApplication = class(AnApplication)
     { Print the selected items to the console.
 
       This method is provided for convenience; it merely calls
-      @link(AStream.printEach ConsoleOut.printEach).
+      @link(ATextOutputStream.printEach ConsoleOut.printEach).
     }
     function print(const items: array of const): TStreamIOSize; virtual;
 
     { Print the selected items to the diagnostic/error output.
 
       This method is provided for convenience; it merely calls
-      @link(AStream.printEach ErrorOut.printEach).
+      @link(ATextOutputStream.printEach ErrorOut.printEach).
     }
     function printError(const items: array of const): TStreamIOSize; virtual;
 
@@ -89,19 +89,19 @@ type AConsoleApplication = class(AnApplication)
       should NOT free this reference; that will be done when the application
       instance is freed.
     }
-    function ConsoleOut: AStream; virtual;
+    function ConsoleOut: ATextOutputStream; virtual;
 
     { Retrieve a reference to the stream used for console input.  The caller
       should NOT free this reference; that will be done with the application
       instance is freed.
     }
-    function ConsoleIn: AStream; virtual;
+    function ConsoleIn: ATextInputStream; virtual;
 
     { Retrieve a reference to the stream used for diagnostic and error output.
       The caller should NOT free this reference; that will be done when the
       application instance is freed.
     }
-    function ErrorOut: AStream; virtual;
+    function ErrorOut: ATextOutputStream; virtual;
 end;
 {$ENDIF}
 {$IFDEF ReadImplementation}
@@ -148,10 +148,10 @@ begin
 
   // Check to ensure our console streams have been created
   if MyConsoleOut = nil then
-    MyConsoleOut := AStandardOutputStream.new;
+    MyConsoleOut := AConsoleOutputStream.around(AStandardOutputStream.new);
 
   if MyErrorOut = nil then
-    MyErrorOut := AStandardErrorStream.new;
+    MyErrorOut := AConsoleOutputStream.around(AStandardErrorStream.new);
 
   { Return non-zero (true) if any of the streams are nil.  Return zero (false)
     only if NONE of the streams are nil.
@@ -175,21 +175,21 @@ end;
 
 // Properties ------------------------------------------------------------------
 // Retrieve a reference to the stream used for console output
-function AConsoleApplication.ConsoleOut: AStream;
+function AConsoleApplication.ConsoleOut: ATextOutputStream;
 
 begin
   Result := MyConsoleOut;
 end;
 
 // Retrieve a reference to the stream used for console input
-function AConsoleApplication.ConsoleIn: AStream;
+function AConsoleApplication.ConsoleIn: ATextInputStream;
 
 begin
   Result := MyConsoleIn;
 end;
 
 // Retrieve a reference to the stream used for diagnostic and error output
-function AConsoleApplication.ErrorOut: AStream;
+function AConsoleApplication.ErrorOut: ATextOutputStream;
 
 begin
   Result := MyErrorOut;

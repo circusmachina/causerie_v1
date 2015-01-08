@@ -36,6 +36,17 @@ type AStreamWrapper = class(AStream)
     myOwnTarget: boolean;
 
   public
+    { Construct a new stream wrapper that will wrap around the specified stream.
+
+      If @code(takeOwnershipOfTarget) is @true, then the stream wrapper will
+      assume ownership of @code(Target) and will free the stream when it is,
+      itself, freed.  Otherwise, the caller is responsible for freeing
+      @code(Target) when it is no longer needed and @italic(after) the stream
+      wrapper is freed.
+    }
+    constructor around(const Target: AStream;
+      const takeOwnershipOfTarget: boolean = true); virtual;
+
     { Initializer }
     function init: boolean; override;
 
@@ -182,6 +193,17 @@ end;
 {$ENDIF}
 {$IFDEF ReadImplementation}
 // AStreamWrapper **************************************************************
+// Constructor
+constructor AStreamWrapper.around(const Target: AStream;
+  const takeOwnershipOfTarget: boolean = true);
+
+begin
+  inherited new;
+
+  MyTarget := Target;
+  myOwnTarget := takeOwnershipOfTarget;
+end;
+
 // Initializer
 function AStreamWrapper.init: boolean;
 

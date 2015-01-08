@@ -17,7 +17,8 @@
 }
 {$IFDEF ReadInterface}
 { This type is used to represent a sort key, which is used to arrange items in
-  a binary tree or list.
+  a binary tree or list.  It is defined to make code flexible and easy to
+  change or update.
 }
 type TSortKey = int64;
 
@@ -43,10 +44,12 @@ type
     MyLeftTree: ABinaryLeaf;
     { Refers to the right subtree of the node. }
     MyRightTree: ABinaryLeaf;
+    { Manages the number of occurrences of this node. }
+    MyOccurrences: AnObjectVector;
     { Stores the key used to sort the node. }
     mySortKey: TSortKey;
     { Stores the index of the node }
-    myIndex: integer;
+    myIndex: TNodeRelativeIndex;
 
   public
     { Construct a new node that uses the specified value as its sort key. }
@@ -59,6 +62,13 @@ type
 
     { Initializer }
     function init: boolean; override;
+
+    { Destroy the node.
+
+      This method frees @link(ABinaryLeaf.Occurrences) and then calls the
+      inherited routine.
+    }
+    destructor destroy; override;
 
     { Determine whether or not the specified sort key is contained within the
       node or one of its subtrees.
@@ -125,10 +135,24 @@ type
       of the current leaf, then @code(ThisLeaf) is inserted into the right
       subtree of the current node.  If the sort key of @code(ThisLeaf) is less
       than the sort key of the current leaf, then @code(ThisLeaf) is inserted
-      into the left subtree of the current node.  If the values match, then
-      this routine returns a reference to @code(Self) and NO INSERTION OCCURS;
-      this behavior effectively prevents duplicate sort keys from existing
-      within the same tree.
+      into the left subtree of the current node.
+
+      If @code(thisKey) matches the value of
+      @link(ABinaryLeaf.sortKey Self.sortKey) and @code(allowDuplicates) is
+      @false, then this routine returns a reference to @code(Self) and NO
+      INSERTION OCCURS.
+
+      If the values match and @code(allowDuplicates) is @true, then this routine
+      will insert a reference to @code(ThisLeaf) into its
+      @link(ABinaryLeaf.Occurrences list of occurrences), constructing such a
+      list if necessary.  However, @code(ThisLeaf) is still not inserted into
+      the tree structure, which means it cannot itself be directly found by
+      searching the tree.  An instance of @link(ABinaryTree) which has
+      called this method as part of its own insertion method may insert
+      @code(ThisLeaf) as part of its list structure, so that the node can still
+      be found by a linear search of the list.  Otherwise, the node can be
+      found as one of the occurrences in the list returned by
+      @link(ABinaryLeaf.Occurrences).
 
       If this method is called on the root node of a binary tree, it will
       ensure that the new leaf is inserted at the appropriate position within
@@ -141,7 +165,8 @@ type
       routine should check to see whether the return value of this function
       points to the same location as @code(ThisLeaf).)
     }
-    function insert(const ThisLeaf: ABinaryLeaf): ABinaryLeaf; virtual;
+    function insert(const ThisLeaf: ABinaryLeaf;
+      const allowDuplicates: boolean = false): ABinaryLeaf; virtual;
 
     { Determine the insertion point of a node that has the specified sort key.
 
@@ -248,10 +273,10 @@ type
     { Construct and return a string representation of the node, suitable for
       printing to a text-based console or device.
 
-      The base implementation of this method within @link(ABinaryLeaf) returns
-      the class name of the node and the value of its key and index.  The
-      format of the string returned is controlled by
-      @link(bnlfStringRepresentation).
+      In accordance with the criteria described by
+      @link(APrintingObject.toString), this method returns a string that
+      contains the value of the node's sort key and its index.  The format of
+      the string returned is controlled by @link(bnlfStringRepresentation).
     }
     function toString: AnsiString; override;
 
@@ -280,6 +305,45 @@ type
     }
     function RightTree: ABinaryLeaf; virtual;
 
+    { Retrieve a reference to the list of occurrences maintained by the node.
+
+      The list of occurrences is used in the event that an attempt is made to
+      insert a node with the same sort key as the current key into a tree.  The
+      list maintains the number of occurrences of that sort key.
+
+      The first occurrence in the list will always refer to the current node.
+
+      Note that list is constructed the first time @link(ABinaryLeaf.insert) is
+      called with @code(allowDuplicates) set to @true.   If such a call is
+      never made, this routine will always return @nil.
+
+      The caller should NOT attempt to free the reference returned by this
+      routine; that will be done when the node itself is freed.
+    }
+    function Occurrences: AnObjectVector; virtual;
+
+    { Retrieve a reference to a specific occurrence of the node.
+
+      The node maintains a list of occurrences, which is used in the even that
+      more than one node with the same sort key exists in the tree.  In such
+      cases, only the first node with that sort key will be found by
+      searching the tree (unless a linear search is performed), and so that
+      node is responsible for maintaining a list of references to all other
+      nodes with the same sort key.
+
+      @code(thisIndex) should specify a value of zero (@code(0)) or more.
+      If zero is specified, this method simply returns a reference to the node
+      on which the method was called.  If @code(thisIndex) is larger than
+      the value of @link(AVector.length Occurrences.length), then this method
+      will return @nil.  Otherwise, a reference to the specified occurrence
+      is returned.
+
+      The caller should NOT attempt to free the reference returned by this
+      routine.
+    }
+    function Occurrence(const thisIndex: TNodeAbsoluteIndex): ABinaryLeaf;
+      virtual;
+
     { Retrieve the value of the sort key associated with this node.  This is
       the value that is used in calls to @link(ABinaryLeaf.insert) and others,
       in order to determine where the node is placed in the tree to which it
@@ -296,7 +360,7 @@ type
       later recall by an instance of @link(AVector).  One scenario where this
       behavior would be used is in the creation and storage of a symbol table.
     }
-    function index: integer; virtual;
+    function index: TNodeRelativeIndex; virtual;
 end;
 
 // ABinaryTree *****************************************************************
@@ -306,6 +370,22 @@ end;
    descendants.  Binary trees are declared as instances of @link(ABinaryLeaf)
    so that they can be themselves entered into binary trees and managed as
    lists of binary trees.
+
+   To allow for iteration, instances of @link(ABinaryTree) maintain both a tree
+   structure and a simple list structure.  The tree structure is used to search
+   for nodes with a specific sort key; the list structure is used to iterate
+   through nodes sequentially.  @link(ABinaryTree.Root) refers to the both the
+   base of the tree structure and the first node in the list structure.
+   @link(ABinaryTree.YoungestNode) refers to the last node in the list
+   structure.
+
+   Since @link(ABinaryTree) serves as the basis for a variety of tree-like
+   structures, instances of @link(ABinaryTree) are designed to be as flexible
+   as possible and can manage any descendant of @link(ABinaryLeaf).
+   @link(ABinaryTree.LeafType) indicates the class of node managed by the tree.
+
+   By default, binary trees do not allow duplicate entries; this behavior can
+   be changed by calling @link(ABinaryTree.setDuplicateEntriesAllowed).
 }
 type
   ABinaryTree = class(ABinaryLeaf, CanIterate)
@@ -314,6 +394,8 @@ type
     MyLeafType: ANodeClass;
     { Refers to the oldest node in the tree }
     MyRoot: ABinaryLeaf;
+    { Indicates whether or not the tree allows duplicate entries }
+    myDuplicateEntriesAllowed: boolean;
 
   public
     { Initializer }
@@ -358,7 +440,7 @@ type
       @return(A reference to the node with the specified index, if found;
       @nil otherwise).
     }
-    function LeafAtIndex(thisindex: longword): ABinaryLeaf; virtual;
+    function LeafAtIndex(thisindex: TNodeRelativeIndex): ABinaryLeaf; virtual;
 
     { Determine whether or not the root node or its subtrees contain a node
       with a sort key that matches @code(thisKey).
@@ -460,11 +542,11 @@ type
       tree.
 
       Use this method with care!  Because @link(ABinaryTree) relies on the
-      current value of @link(ANode.census ABinaryLeaf.census) to determine the
+      current value of @link(ANode.census ABinaryTree.census) to determine the
       index of new nodes that are inserted into the tree, removing and then
       adding nodes could result in nodes with duplicate indices in the same
-      tree.  If you rely on indices being constant and unique, you should call
-      ensure that  @code(updateIndices) is @true, so that
+      tree.  If you rely on indices being constant and unique, you should
+      ensure that @code(updateIndices) is @true, so that
       @link(ABinaryTree.reindex) is called after the node is deleted.
 
       @return(A reference to the node with a sort key that matches the one
@@ -484,11 +566,11 @@ type
       reinserted into the tree.
 
       Use this method with care!  Because @link(ABinaryTree) relies on the
-      current value of @link(ANode.census ABinaryLeaf.census) to determine the
+      current value of @link(ANode.census ABinaryTree.census) to determine the
       index of new nodes that are inserted into the tree, removing and then
       adding nodes could result in nodes with duplicate indices in the same
-      tree.  If you rely on indices being constant and unique, you should call
-      ensure that  @code(updateIndices) is @true, so that
+      tree.  If you rely on indices being constant and unique, you should
+      ensure that @code(updateIndices) is @true, so that
       @link(ABinaryTree.reindex) is called after the node is deleted.
 
       @return(A reference to the node with a sort key that matches the one
@@ -505,11 +587,11 @@ type
       @code(thisKey).  If it is found, then the node is freed.
 
       Use this method with care!  Because @link(ABinaryTree) relies on the
-      current value of @link(ANode.census ABinaryLeaf.census) to determine the
+      current value of @link(ANode.census ABinaryTree.census) to determine the
       index of new nodes that are inserted into the tree, removing and then
       adding nodes could result in nodes with duplicate indices in the same
       tree.  If you rely on indices being constant and unique, you should call
-      ensure that  @code(updateIndices) is @true, so that
+      ensure that @code(updateIndices) is @true, so that
       @link(ABinaryTree.reindex) is called after the node is deleted.
 
       @return(@true if the node was found and freed; @false otherwise.)
@@ -524,11 +606,11 @@ type
       is freed.
 
       Use this method with care!  Because @link(ABinaryTree) relies on the
-      current value of @link(ANode.census ABinaryLeaf.census) to determine the
+      current value of @link(ANode.census ABinaryTree.census) to determine the
       index of new nodes that are inserted into the tree, removing and then
       adding nodes could result in nodes with duplicate indices in the same
-      tree.  If you rely on indices being constant and unique, you should call
-      ensure that  @code(updateIndices) is @true, so that
+      tree.  If you rely on indices being constant and unique, you should
+      ensure that @code(updateIndices) is @true, so that
       @link(ABinaryTree.reindex) is called after the node is deleted.
 
       @return(@true if the node was found and freed; @false otherwise.)
@@ -600,7 +682,7 @@ type
 
       @return(The total number of bytes printed to @code(Dest).)
     }
-    function printSelfTo(const Dest: AStream;
+    function printSelfTo(const Dest: ATextOutputStream;
       prefix: AnsiString = '';
       suffix: AnsiString = ''): TStreamIOSize; override;
 
@@ -651,7 +733,7 @@ type
 
       @return(The total number of bytes printed to @code(Dest).)
     }
-    function printTo(const Dest: AStream;
+    function printTo(const Dest: ATextOutputStream;
       prefix: AnsiString = '';
       suffix: AnsiString = ''): TStreamIOSize; override;
 
@@ -690,6 +772,30 @@ type
       If the tree has no nodes, this routine will return @nil.
     }
     function YoungestNode: ABinaryLeaf; virtual;
+
+    { Retrieve whether or not the tree allows duplicate entries: that is, nodes
+      that have the same sort key.
+
+      By default, instances of @link(ABinaryTree) do not allow duplicate
+      entries, but this behavior can be changed by calling
+      @link(ABinaryTree.setDuplicateEntriesAllowed).
+
+      If duplicate entries are not allowed, attempts to call
+      @link(ABinaryTree.InsertLeaf) with a node that has a sort key that matches
+      one already present in the tree will fail.
+    }
+    function duplicateEntriesAllowed: boolean; virtual;
+
+    { Set whether or not the tree allows duplicate entries: that is, whether it
+      allows nodes that have the same sort key.
+
+      By default, instances of @link(ABinaryTree) do not allow duplicate
+      entries, but by calling this method with a value of @true, duplicate
+      entries will be allowed when calling @link(ABinaryTree.InsertLeaf).
+
+      @return(The previous value of @link(ABinaryTree.duplicateEntriesAllowed).)
+    }
+    function setDuplicateEntriesAllowed(const flag: boolean): boolean; virtual;
 end;
 
 // ABinaryTreeDictionary *******************************************************
@@ -708,13 +814,11 @@ end;
   { This string controls the way a representation of @link(ABinaryLeaf) is
     constructed by @link(ABinaryLeaf.toString).
 
-    The string placeholder will be filled with the display name of the class, as
-    returned by a call to
-    @link(APrintingObject.displayName ABinaryLeaf.displayName).  The two integer
-    placeholders will be filled by the index and sort keys of the node,
-    respectively.
+    The two integer placeholders will be filled by the index and sort keys of
+    the node, respectively, as returned by calls to
+    @link(ABinaryLeaf.index) and @link(ABinaryLeaf.sortKey).
   }
-  bnlfStringRepresentation = '%s at index %d with key %d';
+  bnlfStringRepresentation = '[%d]: %d';
 
   { This string controls the way a representation of @link(ABinaryTree) is
     constructed by @link(ABinaryTree.toString) when the tree has exactly one
@@ -801,9 +905,18 @@ function ABinaryLeaf.init: boolean;
 begin
   MyLeftTree := nil;
   MyRightTree := nil;
+  MyOccurrences := nil;
   mySortKey := 0;
   myIndex := 0;
   result := inherited init;
+end;
+
+// Destructor
+destructor ABinaryLeaf.destroy;
+
+begin
+  if MyOccurrences <> nil then
+    MyOccurrences.free;
 end;
 
 /// Determines whether the node or its subtrees has a node with the specified key
@@ -883,7 +996,8 @@ end;
    or not the insertion was successful, check to see whether the pointer
    returned by this function refers to the same address as \p ThisLeaf.
 *}
-function ABinaryLeaf.insert(const ThisLeaf: ABinaryLeaf): ABinaryLeaf;
+function ABinaryLeaf.insert(const ThisLeaf: ABinaryLeaf;
+  const allowDuplicates: boolean = false): ABinaryLeaf;
 
 var
   // Stores the relationship between the leaf in question and the specified key
@@ -918,7 +1032,25 @@ begin
   end
 
   else if rel = 0 then
+  begin
+    // The leaf has the same value as this node
+    if (allowDuplicates) and (ThisLeaf <> Self) then
+    begin
+      // Construct a list of occurrences, if needed
+      if MyOccurrences = nil then
+      begin
+        // There will be at least two elements in the vector
+        MyOccurrences := AnObjectVector.ofLength(2);
+        // The vector does not own its objects
+        MyOccurrences.setOwnsObjects(false);
+      end;
+
+      MyOccurrences.pushObject(Self);
+      MyOccurrences.pushObject(ThisLeaf);
+    end;
+
     Result := Self;
+  end;
 end;
 
 /// Finds the insertion point of the specified key
@@ -1057,7 +1189,7 @@ function ABinaryLeaf.toString: string;
 
 begin
   result := format(bnlfStringRepresentation, [
-    Self.displayName, myIndex, mySortKey
+    myIndex, mySortKey
   ]);
 end;
 
@@ -1076,6 +1208,26 @@ begin
   Result := MyRightTree;
 end;
 
+// Retrieve a reference to the list of occurrences maintained by the leaf
+function ABinaryLeaf.Occurrences: AnObjectVector;
+
+begin
+  Result := MyOccurrences;
+end;
+
+// Retrieve a reference to the specified occurrence of the entry
+function ABinaryLeaf.Occurrence(const thisIndex: TNodeAbsoluteIndex): ABinaryLeaf;
+
+begin
+  Result := nil;
+
+  if thisIndex = 0 then
+    Result := Self
+
+  else if (MyOccurrences <> nil) and (thisIndex < MyOccurrences.length) then
+    Result := ABinaryLeaf(MyOccurrences.ObjectAt(thisIndex));
+end;
+
 /// Retrieve the key associated with the node
 function ABinaryLeaf.sortKey: TSortKey;
 
@@ -1084,7 +1236,7 @@ begin
 end;
 
 /// Retrieve the index of the node
-function ABinaryLeaf.index: integer;
+function ABinaryLeaf.index: TNodeRelativeIndex;
 
 begin
   result := myIndex;
@@ -1124,21 +1276,17 @@ begin
 end;
 
 // Retrieve the node with the specified index
-function ABinaryTree.LeafAtIndex(thisIndex: longword): ABinaryLeaf;
+function ABinaryTree.LeafAtIndex(thisIndex: TNodeRelativeIndex): ABinaryLeaf;
 
 begin
   if thisIndex >= myChildCount then
     thisIndex := myChildCount - 1;
 
-  Result := MyRoot;
+  if thisIndex > 0 then
+    Result := ABinaryLeaf(MyRoot.SiblingAtAbsolutePosition(thisIndex))
 
-  while Result <> nil do
-  begin
-    if Result.index = thisIndex then
-      break;
-
-    Result := ABinaryLeaf(Result.Next);
-  end;
+  else
+    Result := MyRoot;
 end;
 
 // Determine whether the tree has the specified leaf
@@ -1174,13 +1322,18 @@ begin
   Result := nil;
   if Leaf <> nil then
   begin
+    // No root node yet, so this leaf becomes it
     if MyRoot <> nil then
-      Result := MyRoot.insert(Leaf)
+      Result := MyRoot.insert(Leaf, myDuplicateEntriesAllowed)
 
     else begin
       MyRoot := Leaf;
       Result := Leaf;
     end;
+
+    // If the insertion failed, but we allow duplicates...
+    if (Result <> Leaf) and (myDuplicateEntriesAllowed) then
+      Result := Leaf;
 
     if Result = Leaf then
     begin
@@ -1254,34 +1407,64 @@ begin
 
   // Detach the node
   Result.detach;
-  // Nullify the insertion point
-  InsertionPoint^ := nil;
 
-  // If the node removed is the youngest, then the second youngest becomes
-  // the youngest once more
-  if Result = MyChild then
-    MyChild := ABinaryLeaf(MyChild.Previous);
-
-  // Once for the node being deleted, and...
-  dec(myChildCount);
-
-  // ...if we are NOT automatically updating the indices...
-  if not(updateIndices) then
+  { If we allow duplicates, check to see if there are multiple occurrences of
+    the node.
+  }
+  if (myDuplicateEntriesAllowed) and (Result.Occurrences <> nil) then
   begin
-    { ...once each for left and right subtrees, in order to keep the value of
-      myChildCount correct.  Since the left and right subtrees will be
-      reinserted, they will increase the child count once more.
-    }
-    if LeftSubtree <> nil then
-      dec(myChildCount);
+    // Remove the first occurrence, since that is the node we are removing
+    Result.Occurrences.RemoveObjectAt(0);
 
-    if RightSubtree <> nil then
-      dec(myChildCount);
+    { The insertion point will now refer to the next occurrence of the value.
+      This inserts the next occurrence into the tree structure.
+    }
+    InsertionPoint^ := ABinaryLeaf(Result.Occurrences.ObjectAt(0));
+
+    // Copy the list of occurrences to our new node
+    InsertionPoint^.MyOccurrences := Result.MyOccurrences;
+    // Nil the reference in the original node to keep it from being freed
+    Result.MyOccurrences := nil;
+
+    // Assign the left and right subtrees to the new occurrence
+    InsertionPoint^.MyLeftTree := LeftSubtree;
+    InsertionPoint^.MyRightTree := RightSubtree;
+
+    // Decrement our child count and we're done!
+    dec(myChildCount);
+  end
+
+  else begin
+    // Nullify the insertion point -- this removes it from the tree structure
+    InsertionPoint^ := nil;
+
+    // Once for the node being deleted, and...
+    dec(myChildCount);
+
+    // ...if we are NOT automatically updating the indices...
+    if not(updateIndices) then
+    begin
+      { ...once each for left and right subtrees, in order to keep the value of
+        myChildCount correct.  Since the left and right subtrees will be
+        reinserted, they will increase the child count once more.
+      }
+      if LeftSubtree <> nil then
+        dec(myChildCount);
+
+      if RightSubtree <> nil then
+        dec(myChildCount);
+    end;
+
+    // Reinsert the subtrees of the node
+    Self.insert(LeftSubtree);
+    Self.insert(RightSubtree);
   end;
 
-  // Reinsert the subtrees of the node
-  Self.insert(LeftSubtree);
-  Self.insert(RightSubtree);
+  { If the node removed is the youngest, then the second youngest becomes
+    the youngest once more.
+  }
+  if Result = MyChild then
+    MyChild := ABinaryLeaf(MyChild.Previous);
 
   // Update indices, if specified
   if updateIndices then
@@ -1427,7 +1610,7 @@ begin
 end;
 
 // Print the tree and its nodes to the specified stream
-function ABinaryTree.printSelfTo(const Dest: AStream;
+function ABinaryTree.printSelfTo(const Dest: ATextOutputStream;
   prefix: AnsiString = '';
   suffix: AnsiString = ''): TStreamIOSize;
 
@@ -1514,7 +1697,7 @@ end;
    \return The total number of bytes written to \p Dest.  This value will be
    zero (0) if \p Dest is #nil.
 *}
-function ABinaryTree.printTo(const Dest: AStream;
+function ABinaryTree.printTo(const Dest: ATextOutputStream;
   prefix: AnsiString = '';
   suffix: AnsiString = ''): TStreamIOSize;
 
@@ -1570,6 +1753,21 @@ function ABinaryTree.YoungestNode: ABinaryLeaf;
 
 begin
   result := ABinaryLeaf(MyChild);
+end;
+
+// Retrieve whether or not the tree allows duplicate entries
+function ABinaryTree.duplicateEntriesAllowed: boolean;
+
+begin
+  result := myDuplicateEntriesAllowed;
+end;
+
+// Set whether or not the tree allows duplicate entries
+function ABinaryTree.setDuplicateEntriesAllowed(const flag: boolean): boolean;
+
+begin
+  result := myDuplicateEntriesAllowed;
+  myDuplicateEntriesAllowed := flag;
 end;
 
 // ABinaryTreeDictionary *******************************************************

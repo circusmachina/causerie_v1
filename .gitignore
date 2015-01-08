@@ -10,5 +10,8 @@ icon/*
 !icon/causerie.ico
 lib/*
 build/*
+src/backup/*
 src/base/backup/*
 src/parse/backup/*
+src/commandline/backup/*
+

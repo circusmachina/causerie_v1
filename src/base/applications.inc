@@ -37,6 +37,8 @@ type AnApplication = class(APrintingObject)
     MyEnvironment: ADictionary;
     { Stores the command-line parameters available to the process }
     MyParameters: AStringList;
+    { Stores the version information available to the process }
+    MyVersionInfo: ADictionary;
 
     { Parse any and all environment variables made available to the process.
       This method separates the name of the variable from its value and stores
@@ -182,6 +184,19 @@ type AnApplication = class(APrintingObject)
       @link(AnApplication.executablePath).
     }
     function Parameters: AStringList; virtual;
+
+    { Retrieve a reference to the dictionary of version information available
+      to the process.  This reference should NOT be freed by the caller; that
+      will be done with the @link(AnApplication) instance is destroyed.
+
+      The dictionary reference returned by this method will contain any and all
+      version information key/value pairs that were compiled as a resource into
+      the object file which represents the main executable of the current
+      process.  This dictionary is cached, as these values will not change
+      throughout the lifetime of the program.  The dictionary is constructed
+      the first time this method is called.
+    }
+    function VersionInfo: ADictionary; virtual;
 end;
 {$ENDIF}
 {$IFDEF ReadImplementation}
@@ -199,6 +214,7 @@ begin
     // Construct our environment dictionary and command-line parameters list
     MyEnvironment := ADictionary.new;
     MyParameters := AStringList.new;
+    MyVersionInfo := nil;
 
     if (MyEnvironment = nil) or (MyParameters = nil) then
       exit;
@@ -223,6 +239,10 @@ begin
   if MyParameters <> nil then
     MyParameters.free;
 
+  // Free the version info dictionary
+  if MyVersionInfo <> nil then
+    MyVersionInfo.free;
+
   inherited destroy;
 end;
 
@@ -234,36 +254,33 @@ var
   i: integer;
   // Stores the value of an environment variable
   variableValue: string;
-{$IFDEF WINDOWS}
   // Stores the name of an environment variable
   variableName: string;
   // Stores the position of the delimiter between names and values
   delimiterPos: integer;
-{$ENDIF}
 
 begin
   // Loop through each variable
   for i := 1 to SysUtils.getEnvironmentVariableCount do
   begin
     variableValue := SysUtils.getEnvironmentString(i);
-{$IFDEF WINDOWS}
     { On Windows, environment strings can begin with an equals sign, which will
       confuse our parser, since it expects the first equals sign to be the
       delimiter.  So we use the LAST position of the equals sign as the place
       to separate our variable name from its value.
     }
-    delimiterPos := Charstring.lastPositionOf(dcteDefaultDelimiter,
+    delimiterPos := Charstring.lastPositionOf(mapeDefaultDelimiter,
       variableValue);
-    variableName := System.copy(variableValue, 1, delimiterPos);
-    variableValue := System.copy(variableValue, delimiterPos +
-      System.length(dcteDefaultDelimiter), System.length(variableValue));
 
-    // Add the variable name and value to our environment dictionary
-    MyEnvironment.add(variableName, variableValue);
-{$ELSE}
-    // Add the variable name and value to our environment dictionary
-    MyEnvironment.explode(variableValue);
-{$ENDIF}
+    if delimiterPos > 0 then
+    begin
+      variableName := System.copy(variableValue, 1, delimiterPos - 1);
+      variableValue := System.copy(variableValue, delimiterPos +
+        System.length(mapeDefaultDelimiter), System.length(variableValue));
+
+      // Add the variable name and value to our environment dictionary
+      MyEnvironment.add(variableName, variableValue);
+    end;
   end;
 end;
 
@@ -376,5 +393,31 @@ function AnApplication.Parameters: AStringList;
 begin
   Result := MyParameters;
 end;
+
+// Retrieve the version information
+function AnApplication.VersionInfo: ADictionary;
+
+var
+  // Refers to the version information resource for the current executable
+  VersionResource: AFileVersionInfoResource;
+
+begin
+  if MyVersionInfo = nil then begin
+    MyVersionInfo := ADictionary.new;
+
+  {$IFNDEF WINDOWS}
+    VersionResource := AnELFFileVersionInfoResource.new;
+  {$ELSE}
+    VersionResource := AWindowsFileVersionInfoResource.new;
+  {$ENDIF}
+
+    // Read the version information
+    VersionResource.readInto(MyVersionInfo);
+    VersionResource.free;
+  end;
+
+  Result := MyVersionInfo;
+end;
+
 {$ENDIF}
 

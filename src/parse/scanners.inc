@@ -152,7 +152,7 @@ type AScanner = class(AnIterator)
 
       Scanning begins at the current position within @code(ThisSource).
     }
-    constructor forSource(const ThisSource: AStream); virtual;
+    constructor forSource(const ThisSource: AStream); virtual; overload;
 
     { Initializer }
     function init: boolean; override;

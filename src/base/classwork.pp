@@ -1,5 +1,5 @@
 { classwork.pp - A library of basic Pascal classes useful in larger projects.
-  Copyright (C) 2011-2013 Michael Malicoat.
+  Copyright (C) 2011-2014 Michael Malicoat.
 
   This program is free software: you can redistribute it and/or modify it
   under the terms of the GNU General Public License as published by the
@@ -53,21 +53,25 @@ interface
 {$I streams.inc}
 {$I streamiterators.inc}
 {$I streamwrappers.inc}
+{$I textstreams.inc}
 {$I strings.inc}
 {$I printingobjects.inc}
 {$I exceptions.inc}
+{$I bufferedstreams.inc}
 {$I filestreams.inc}
 {$I consolestreams.inc}
 {$I stringstreams.inc}
-{$I bufferedstreams.inc}
-{$I textstreams.inc}
 {$I nodes.inc}
+{$I vectors.inc}
+{$I pointervectors.inc}
+{$I objectvectors.inc}
 {$I binarytrees.inc}
 {$I binarytreeiterators.inc}
 {$I stringtrees.inc}
 {$I linkedlists.inc}
 {$I stringlists.inc}
 {$I variantlists.inc}
+{$I mappings.inc}
 {$I dictionaries.inc}
 {$I streambookmarks.inc}
 {$I bookmarkedstreams.inc}
@@ -76,9 +80,7 @@ interface
 {$I logging.inc}
 {$I loggingobjects.inc}
 {$I memory.inc}
-{$I vectors.inc}
-{$I pointervectors.inc}
-{$I objectvectors.inc}
+{$I versioninfo.inc}
 {$I applications.inc}
 {$I consoleapplications.inc}
 
@@ -87,7 +89,9 @@ interface
 resourcestring
   {$DEFINE ReadResourceStrings}
   {$I classwork.inc}
+  {$I streams.inc}
   {$I exceptions.inc}
+  {$I textstreams.inc}
   {$I strings.inc}
   {$I filestreams.inc}
   {$I bufferedstreams.inc}
@@ -95,40 +99,47 @@ resourcestring
   {$I binarytrees.inc}
   {$I stringtrees.inc}
   {$I linkedlists.inc}
-  {$I stringlists.inc}
-  {$I dictionaries.inc}
+  {$I mappings.inc}
   {$I streambookmarks.inc}
   {$I counters.inc}
   {$I loggeditems.inc}
   {$I vectors.inc}
+  {$I versioninfo.inc}
 
   {$UNDEF ReadResourceStrings}
 
 implementation
 
 uses
-  crc, lazutf8, sysUtils, variants;
+{$IFDEF WINDOWS}
+  windows,
+{$ENDIF}
+  crc, lazutf8, sysUtils, variants, video;
 
 {$DEFINE ReadImplementation}
 {$I classwork.inc}
 {$I streams.inc}
 {$I streamiterators.inc}
 {$I streamwrappers.inc}
+{$I textstreams.inc}
 {$I strings.inc}
 {$I printingobjects.inc}
 {$I exceptions.inc}
+{$I bufferedstreams.inc}
 {$I filestreams.inc}
 {$I consolestreams.inc}
 {$I stringstreams.inc}
-{$I bufferedstreams.inc}
-{$I textstreams.inc}
 {$I nodes.inc}
+{$I vectors.inc}
+{$I pointervectors.inc}
+{$I objectvectors.inc}
 {$I binarytrees.inc}
 {$I binarytreeiterators.inc}
 {$I stringtrees.inc}
 {$I linkedlists.inc}
 {$I stringlists.inc}
 {$I variantlists.inc}
+{$I mappings.inc}
 {$I dictionaries.inc}
 {$I streambookmarks.inc}
 {$I bookmarkedstreams.inc}
@@ -137,9 +148,7 @@ uses
 {$I logging.inc}
 {$I loggingobjects.inc}
 {$I memory.inc}
-{$I vectors.inc}
-{$I pointervectors.inc}
-{$I objectvectors.inc}
+{$I versioninfo.inc}
 {$I applications.inc}
 {$I consoleapplications.inc}
 

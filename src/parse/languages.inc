@@ -28,12 +28,12 @@ type ACharacterCategory = (
   CHARCAT_SPECIAL,
   { A character that may begin an identifier or reserved word }
   CHARCAT_LETTER,
+  { A character that may begin a numeric constant }
+  CHARCAT_DIGIT,
   { A character that may be part of an identifier or reserved word, but which
     may not begin it
   }
   CHARCAT_WORD,
-  { A character that may begin a numeric constant }
-  CHARCAT_DIGIT,
   { A character that may be part of a numeric constant, but which may not
     begin it
   }
@@ -188,6 +188,19 @@ const
     a scanner for a parsed language.  The category code resides in the high word
     of a @link(TOpcode), while the specific internal representation of that
     token occupies the low word.  It is possible to mask out the internal
+    representation using @link(TOKCAT_CATMASK), in ordr to quickly determine
+    the type of token represented by a specific opcode.
+
+    This constant is used to define a rule, thus allowing instances of
+    @link(ASyntaxRule) to contain specific tokens as well as references to
+    other rules.
+  }
+  TOKCAT_RULE = $002A0000;
+
+  { Each of these constants defines a category of token that is recognized by
+    a scanner for a parsed language.  The category code resides in the high word
+    of a @link(TOpcode), while the specific internal representation of that
+    token occupies the low word.  It is possible to mask out the internal
     representation using @link(TOKCAT_CATMASK), in order to quickly determine
     the type of token represented by a specific opcode.
 
@@ -212,6 +225,47 @@ const
     category constants.
   }
   TOKCAT_CATMASK = $FFFF0000;
+
+// Default syntax rules recognized by a parser
+const
+  { Rules in @link(ASyntaxRuleset) can be retrieved by an arbitrary name or
+    value; however, it is common to define a symbolic constant for each rule so
+    that the rule name or value does not have to be hard-coded.  In addition,
+    there are some basic rules that will probably be common across all types of
+    parsers: rules defining basic token types and indicating which tokens are
+    allowed to begin and end a statement.
+
+    This constant is used to define an invalid rule (no rule).
+  }
+  RULE_NONE = TOKCAT_RULE + $FFFF;
+
+  { Rules in @link(ASyntaxRuleset) can be retrieved by an arbitrary name or
+    value; however, it is common to define a symbolic constant for each rule
+    so that the rule name or value does not have to be hard-coded.  In addition,
+    there are some basic rules that will probably be common across all types of
+    parsers: a rules defining basic token types and a rule to indicate which
+    tokens are allowed to begin and end a statement.
+
+    This constant is used to define the tokens that may begin a statement.  It
+    is not automatically used by the base instance of @link(AParsedLanguage),
+    but is provided here as a way to standardize the way in which one of the
+    more fundamental rules of a parsed language is defined.
+  }
+  RULE_BEGIN_STATEMENT = TOKCAT_RULE + 1;
+
+  { Rules in @link(ASyntaxRuleset) can be retrieved by an arbitrary name or
+    value; however, it is common to define a symbolic constant for each rule
+    so that the rule name or value does not have to be hard-coded.  In addition,
+    there are some basic rules that will probably be common across all types of
+    parsers: a rules defining basic token types and a rule to indicate which
+    tokens are allowed to begin and end a statement.
+
+    This constant is used to define the tokens that may end a statement.  It
+    is not automatically used by the base instance of @link(AParsedLanguage),
+    but is provided here as a way to standardize the way in which one of the
+    more fundamental rules of a parsed language is defined.
+  }
+  RULE_END_STATEMENT = RULE_BEGIN_STATEMENT + 1;
 
 // AParsedLanguage *************************************************************
 { This class serves as the basis for defining a language that will be parsed.
@@ -245,8 +299,18 @@ type AParsedLanguage = class(AnObject)
       references the language to determine what type of token to create when a
       given character is encountered in the source.
 
-      The base implementation of this routine simply sets all character
-      category strings to empty strings.
+      The base implementation of this routine first sets all character
+      category strings to empty strings.  It then assigns the categories as
+      follows:
+      @unorderedList(
+        @item(@code(CHARCAT_LETTER) is set to @link(plcsTypicalLetter))
+        @item(@code(CHARCAT_WORD) is set to @link(plcsTypicalWord))
+        @item(@code(CHARCAT_DIGIT) is set to @link(plcsTypicalDigit))
+        @item(@code(CHARCAT_NUMERIC) is set to @link(plcsTypicalNumeric))
+        @item(@code(CHARCAT_SPACE) is set to @link(plcsTypicalWhitespace))
+        @item(@code(CHARCAT_EOL) is set to @link(plcsTypicalEndOfLine))
+        @item(@code(CHARCAT_EOS) is set to @link(plcsTypicalEndOfStream))
+      )
     }
     procedure defineCharacterCategories; virtual;
 
@@ -272,10 +336,10 @@ type AParsedLanguage = class(AnObject)
       positioned where it is found in the source.
 
       The base implementation of this routine creates two default, empty rules:
-      @link(RULE4_BEGINNING_STATEMENTS) and @link(RULE4_ENDING_STATEMENTS).  If
-      these two rules are desired in a given language implementation, then
-      descendant classes should call the inherited routine before installing
-      their own rules.
+      @link(RULE_BEGIN_STATEMENT) and @link(RULE_END_STATEMENT).  If these two
+      rules are desired in a given language implementation, then descendant
+      classes should call the inherited routine before installing their own
+      rules.
     }
     procedure defineRules; virtual;
 
@@ -399,16 +463,6 @@ type AParsedLanguage = class(AnObject)
     }
     function SyntaxRule(const rule: TSortKey): ASyntaxRule;
 
-    { Retrieve a reference to the named syntax rule, which specifies one or
-      more opcodes that are to be used or ignored by the parser for the language
-      in various circumstances.
-
-      The caller may use the reference returned by this method to search the
-      rule directly, but the reference should NOT be freed.  That will be done
-      automatically when the language instance is itself freed.
-    }
-    function SyntaxRule(const rule: string): ASyntaxRule;
-
     { Retrieve a reference to the list of syntax rules maintained by the
       language definition.  These rules specify lists of opcodes that the
       parser should process or ignore in various circumstances.
@@ -449,7 +503,65 @@ const
   }
   LINE_ENDING_APPLE: string = #10;
 {$ENDIF}
+{$IFDEF ReadResourceStrings}
+  { This string defines the characters which are typically allowed to begin
+    identifiers in various languages.  It is defined here for convenience,
+    so that other language specifications may reference it.
+  }
+  plcsTypicalLetter = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ' +
+    'abcdefghijklmnopqrstuvwxyz_';
+
+  { This string defines the characters which are typically allowed to be part
+    of an identifier, though they may not begin it, in various languages.  It
+    is defined here for convenience, so that other language specifications may
+    reference it.
+  }
+  plcsTypicalWord = '0123456789';
+
+  { This string defines the characters which are typically allowed to begin
+    numeric constants in various languages.  It is defined here for convenience,
+    so that other language specifications may reference it.
+  }
+  plcsTypicalDigit = '0123456789';
+
+  { This string defines the characters which are typically allowed to be part
+    of a numeric constant, though they may not begin it, by various languages.
+    It is defined here for convenience, so that other language specifications
+    may reference it.
+  }
+  plcsTypicalNumeric = 'xXeE';
+
+  { This string defines the characters which are typically counted as whitespace
+    by various languages.  It is defined here for convenience, so that other
+    language specifications may reference it.
+  }
+  plcsTypicalWhitespace = #0#1#2#3#4#5#6#7#8#9#11#12#14#15#16#17#18#19#20 +
+    #21#22#23#24#25#27#28#29#30#31#32#127;
+
+  { This string defines the characters which are typically counted as line
+    ending characters by various languages.  It is defined here for
+    convenience, so that other language specifications may reference it.
+  }
+  plcsTypicalEndOfLine = #10#13;
+
+  { This string defines the characters which are typically used to mark the end
+    of a stream by various languages.  It is defined here for convenience, so
+    that other language specifications may reference it.
+  }
+  plcsTypicalEndOfStream = #26;
+{$ENDIF}
 {$IFDEF ReadImplementation}
+
+{$IFDEF DEBUG}
+const
+  charCategoryNames: array[CHARCAT_DUMMY..CHARCAT_ERROR] of string = (
+    'CHARCAT_DUMMY', 'CHARCAT_SPECIAL', 'CHARCAT_LETTER',
+    'CHARCAT_DIGIT', 'CHARCAT_WORD',  'CHARCAT_NUMERIC',
+    'CHARCAT_SPACE', 'CHARCAT_EOL', 'CHARCAT_EOS',
+    'CHARCAT_ERROR'
+  );
+{$ENDIF}
+
 // Constructor
 constructor AParsedLanguage.new;
 
@@ -471,6 +583,8 @@ begin
 
   if result then
   begin
+    myCaseAwareness := false;
+
     // Establish an opcodes dictionary
     MyOpcodes := AnOpcodeDictionary.new;
     // Establish a syntax ruleset
@@ -506,7 +620,17 @@ begin
   // Loop through and set all character category strings
   for i := System.low(myCharacterCategories) to
     System.high(myCharacterCategories) do
+    // First, clear all of them
     myCharacterCategories[i] := '';
+
+  // Now, establish some typicals
+  myCharacterCategories[CHARCAT_LETTER] := plcsTypicalLetter;
+  myCharacterCategories[CHARCAT_WORD] := plcsTypicalWord;
+  myCharacterCategories[CHARCAT_DIGIT] := plcsTypicalDigit;
+  myCharacterCategories[CHARCAT_NUMERIC] := plcsTypicalNumeric;
+  myCharacterCategories[CHARCAT_SPACE] := plcsTypicalWhitespace;
+  myCharacterCategories[CHARCAT_EOL] := plcsTypicalEndOfLine;
+  myCharacterCategories[CHARCAT_EOS] := plcsTypicalEndOfStream;
 end;
 
 // Define basic rules common to a majority of langutes
@@ -514,9 +638,9 @@ procedure AParsedLanguage.defineRules;
 
 begin
   // Add the rule which is used to determine which tokens begin statements
-  MySyntaxRules.addNewRule(RULE4_BEGINNING_STATEMENTS, []);
+  MySyntaxRules.addNewRule(RULE_BEGIN_STATEMENT, []);
   // Add the rule which is used to determine which tokens end statements
-  MySyntaxRules.addNewRule(RULE4_ENDING_STATEMENTS, []);
+  MySyntaxRules.addNewRule(RULE_END_STATEMENT, []);
 end;
 
 // Retrieve the category to which the given character belongs
@@ -536,6 +660,12 @@ begin
   for i := System.low(myCharacterCategories) to
     System.high(myCharacterCategories) do
   begin
+
+  {$IFDEF DEBUG}
+    writeln(Self.className, '.categoryOf(): Checking for character "', ch, '"',
+      ' in ', charCategoryNames[i]);
+  {$ENDIF}
+
     // See if the character exists in the string
     if Charstring.positionOf(ch, myCharacterCategories[i]) > 0 then
     begin
@@ -562,6 +692,12 @@ begin
   // Loop through each category string
   for i := 0 to System.high(categoryList) do
   begin
+
+  {$IFDEF DEBUG}
+    writeln(Self.className, '.characterIn(): Checking for character "', ch, '"',
+      ' in ', charCategoryNames[categoryList[i]]);
+  {$ENDIF}
+
     // See if the character exists in the given string
     if Charstring.positionOf(ch, myCharacterCategories[categoryList[i]]) > 0 then
     begin
@@ -616,14 +752,6 @@ end;
 
 // Retrieve a reference to the given syntax rule
 function AParsedLanguage.SyntaxRule(const rule: TSortKey): ASyntaxRule;
-
-begin
-  Result := MySyntaxRules.Rule(rule);
-end;
-
-
-// Retrieve a reference to the given syntax rule
-function AParsedLanguage.SyntaxRule(const rule: string): ASyntaxRule;
 
 begin
   Result := MySyntaxRules.Rule(rule);

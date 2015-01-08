@@ -14,11 +14,15 @@
   with this program.  If not, see <http://www.gnu.org/licenses/>.
 }
 {$IFDEF ReadInterface}
+// AStandardOutputStream *******************************************************
 { This class allows access to @code(stdout) as though it was a file stream.  The
   class does not support reading or seeking and will fail silently if these
   operations are attempted.  The primary reason for this class to exist is to
   allow console output to be used in conjunction with any class that supports
   writing to an arbitrary stream.
+
+  Note that if you want to print text using this stream, you must create an
+  instance of @link(ATextOutputStream) that wraps around it.
 }
 type AStandardOutputStream = class(AStream)
   protected
@@ -66,11 +70,15 @@ type AStandardOutputStream = class(AStream)
     function length: TStreamLength; override;
 end;
 
+// AStandardInputStream ********************************************************
 { This class allows access to @code(stdin) as though it was a file stream.  The
   class does not support writing or seeking and will fail silently if these
   operations are attempted.  The primary reason for this class to exist is to
   allow console input to be used by any class that supports reading from an
   arbitrary stream.
+
+  Note that if you want to read text from this stream, you must create an
+  instance of @link(ATextInputStream) that wraps around it.
 }
 type AStandardInputStream = class(AStream)
   protected
@@ -118,6 +126,7 @@ type AStandardInputStream = class(AStream)
     function length: TStreamLength; override;
 end;
 
+// AStandardErrorStream ********************************************************
 { This class allows access to @code(stderr) as though it was a file stream.
   The class does not support reading or seeking and will fail silently if these
   operations are attempted.  The primary reason for this class to exist is to
@@ -134,6 +143,37 @@ type AStandardErrorStream = class(AStandardOutputStream)
     function write(const count: TStreamIOSize; const source): TStreamIOSize;
       override;
 end;
+
+// AConsoleOutputStream ********************************************************
+{ This class can be used to wrap around an instance of
+  @link(AStandardOutputStream) or one of its descendants so that ASCII and UTF-8
+  encoded text can be written to the stream.
+}
+type AConsoleOutputStream = class(ATextOutputStream)
+  public
+    // Properties --------------------------------------------------------------
+    { Retrieve the maximum number of characters that may be printed to a line
+      before the line is forcibly wrapped.
+
+      This method overrides the behavior inherited from
+      @link(ATextOutputStream.lineLength): it queries the current display mode
+      for its width, in characters, and returns that to the caller.
+
+      This method assumes that the output stream is being printed to a screen
+      device, which may not be true if the operating system has redirected the
+      output of @code(stdout), but that is beyond the control of the program
+      which uses this routine.
+    }
+    function lineLength: longword; override;
+end;
+
+// AConsoleInputStream **********************************************************
+{ This class can be used to wrap around an instance of
+  @link(AStandardInputStream) or any of its descendants so that ASCII and UTF-8
+  encoded text can be read from the stream.
+}
+type AConsoleInputStream = class(ATextInputStream);
+
 {$ENDIF}
 {$IFDEF ReadImplementation}
 // AStandardOutputStream *******************************************************
@@ -191,10 +231,10 @@ begin
     newString := '';
     psource := pchar(@source);
     // Get the new string
-    system.setString(newString, psource, count);
-    result := system.length(newString);
+    System.setString(newString, psource, count);
+    result := System.length(newString);
     inc(myPosition, result);
-    system.write(stdout, newString);
+    System.write(stdout, newString);
   end;
 end;
 
@@ -363,6 +403,19 @@ begin
     inc(myPosition, result);
     system.write(stderr, newString);
   end;
+end;
+
+// AConsoleOutputStream ********************************************************
+// Properties ------------------------------------------------------------------
+function AConsoleOutputStream.lineLength: longword;
+
+var
+  // Refers to the current video mode
+  currentVideoMode: TVideoMode;
+
+begin
+  Video.getVideoMode(currentVideoMode);
+  result := currentVideoMode.col;
 end;
 {$ENDIF}
 

@@ -38,11 +38,11 @@ type AVector = class(APrintingObject, CanStream)
     { Refers to the memory block that stores the items in the array }
     myBuffer: pchar;
     { Indicates the current size of the memory block that stores elements }
-    myBufferLength: longword;
+    myBufferLength: TCensus;
     { Indicates the size of elements in the array }
     myElementSize: longword;
     { Indicates the current number of elements in the array }
-    myLength: longword;
+    myLength: TCensus;
 
   public
     { Construct a new instance of @link(AVector) that will handle elements
@@ -62,7 +62,7 @@ type AVector = class(APrintingObject, CanStream)
       @raises(AVectorAllocationError if the initial attempt to allocate
       memory for the buffer fails.)
     }
-    constructor ofLength(const initialLength: longword;
+    constructor ofLength(const initialLength: TCensus;
       const elementsSize: longword; const initialValue: pointer = nil); virtual;
 
     { Initializer }
@@ -100,7 +100,7 @@ type AVector = class(APrintingObject, CanStream)
       @raises(AVectorAllocationError if a memory block large enough to
         hold the number of elements specified.)
     }
-    procedure allocateElements(const elementCount: longword); virtual;
+    procedure allocateElements(const elementCount: TCensus); virtual;
 
     { Grow the array by the specified number of elements.
 
@@ -118,7 +118,7 @@ type AVector = class(APrintingObject, CanStream)
       @raises(AVectorAllocationError if the attempt to reallocate the
       buffer failed.)
     }
-    procedure grow(newElementCount: longword = 0); virtual;
+    procedure grow(newElementCount: TCensus = 0); virtual;
 
     { Fill the entire array with a copy of the specified value.
 
@@ -165,11 +165,12 @@ type AVector = class(APrintingObject, CanStream)
       end of the array.  If @code(newElement) is @nil, then the new item is
       initialized to all zero (0) bytes.
 
-      @return(The index of the new item.  This index is not absolute; if
+      @return(The index of the new item.  This index is not permanent; if
       items are removed from the array, then the indices of any items after the
       one removed will change.)
     }
-    function appendElement(const newElement: pointer): longword; virtual;
+    function appendElement(const newElement: pointer): TNodeAbsoluteIndex;
+      virtual;
 
     { Add the element into the array at the specified index.
 
@@ -186,8 +187,8 @@ type AVector = class(APrintingObject, CanStream)
       @code(newElement) is @nil, then the new item is initialized to all zero
       (0) bytes.
     }
-    procedure insertElementAt(thisIndex: longword; const newElement: pointer);
-      virtual;
+    procedure insertElementAt(thisIndex: TNodeAbsoluteIndex;
+      const newElement: pointer); virtual;
 
     { Remove the element at the specified index.
 
@@ -205,8 +206,8 @@ type AVector = class(APrintingObject, CanStream)
       it is removed from the array.  If @code(destElement) is @nil, then the
       element is removed from the array and discarded.
     }
-    procedure removeElementAt(thisIndex: longword; const destElement: pointer);
-      virtual;
+    procedure removeElementAt(thisIndex: TNodeAbsoluteIndex;
+      const destElement: pointer); virtual;
 
     { Delete the element at the specified index.
 
@@ -221,7 +222,7 @@ type AVector = class(APrintingObject, CanStream)
       This method simply calls @link(AVector.removeElementAt), passing
       a @nil pointer for the @code(destElement).
     }
-    procedure deleteElementAt(const thisIndex: longword); virtual;
+    procedure deleteElementAt(const thisIndex: TNodeAbsoluteIndex); virtual;
 
     { Retrieve the element at the specified index.
 
@@ -235,8 +236,8 @@ type AVector = class(APrintingObject, CanStream)
       length.  The value at the specified index will be copied there.  If
       @code(destElement) is @nil, then this routine does nothing.
     }
-    procedure getElementAt(thisIndex: longword; const destElement: pointer);
-      virtual;
+    procedure getElementAt(thisIndex: TNodeAbsoluteIndex;
+      const destElement: pointer); virtual;
 
     { Set the element at the specified index.
 
@@ -252,8 +253,8 @@ type AVector = class(APrintingObject, CanStream)
       If @code(newElement) is @nil, then this routine zero-fills the element
       at the specified index.
     }
-    procedure setElementAt(thisIndex: longword; const newElement: pointer);
-      virtual;
+    procedure setElementAt(thisIndex: TNodeAbsoluteIndex;
+      const newElement: pointer); virtual;
 
     // CanStream implementation ------------------------------------------------
     { Calculate the number of bytes required to stream the vector.
@@ -318,13 +319,13 @@ type AVector = class(APrintingObject, CanStream)
     function lastElement: pointer; virtual;
 
     { Retrieve the size, in bytes, of the buffer used by the array. }
-    function bufferLength: longword; virtual;
+    function bufferLength: TCensus; virtual;
 
     { Retrieve the size of, in bytes, of elements stored in the array. }
     function elementSize: longword; virtual;
 
     { Retrieve the total number of elements in the array. }
-    function length: longword; virtual;
+    function length: TCensus; virtual;
 end;
 
 { An instance of this exception class is raised whenever there is a fatal error
@@ -379,7 +380,7 @@ type AVectorAllocationError = class(AVectorError);
 {$IFDEF ReadImplementation}
 // AVector *********************************************************************
 // Constructor
-constructor AVector.ofLength(const initialLength: longword;
+constructor AVector.ofLength(const initialLength: TCensus;
   const elementsSize: longword; const initialValue: pointer = nil);
 
 begin
@@ -423,7 +424,7 @@ begin
 end;
 
 // Allocate memory for the specified number of elements
-procedure AVector.allocateElements(const elementCount: longword);
+procedure AVector.allocateElements(const elementCount: TCensus);
 
 var
   // Points to the new buffer
@@ -452,11 +453,11 @@ begin
 end;
 
 // Grow the array
-procedure AVector.grow(newElementCount: longword = 0);
+procedure AVector.grow(newElementCount: TCensus = 0);
 
 var
   // Stores the previous length of the array
-  oldLength: longword;
+  oldLength: TCensus;
 
 begin
   if myBuffer = nil then
@@ -468,7 +469,11 @@ begin
     current size
   }
   if newElementCount = 0 then
-    newElementCount := myLength div 2;
+    if myLength > 1 then
+      newElementCount := myLength div 2
+
+    else
+      newElementCount := 1;
 
   inc(newElementCount, myLength);
 
@@ -552,7 +557,7 @@ begin
 end;
 
 // Append an element at the end of the array
-function AVector.appendElement(const newElement: pointer): longword;
+function AVector.appendElement(const newElement: pointer): TCensus;
 
 begin
   result := 0;
@@ -565,14 +570,14 @@ begin
 end;
 
 // Add an element at the specified index
-procedure AVector.insertElementAt(thisIndex: longword;
+procedure AVector.insertElementAt(thisIndex: TCensus;
   const newElement: pointer);
 
 var
   // Refers to the part of the buffer into which values are copied
   insertionPoint: pointer;
   // Loop counter
-  i: longword;
+  i: TCensus;
 
 begin
   if (myBuffer = nil) or (newElement = nil) then
@@ -607,7 +612,7 @@ end;
 
 // Remove an element at the specified index
 // Add an element at the specified index
-procedure AVector.removeElementAt(thisIndex: longword;
+procedure AVector.removeElementAt(thisIndex: TCensus;
   const destElement: pointer);
 
 var
@@ -643,14 +648,14 @@ begin
 end;
 
 // Delete the element at the specified index
-procedure AVector.deleteElementAt(const thisIndex: longword);
+procedure AVector.deleteElementAt(const thisIndex: TCensus);
 
 begin
   Self.removeElementAt(thisIndex, nil);
 end;
 
 // Retrieve the element at the specified index
-procedure AVector.getElementAt(thisIndex: longword;
+procedure AVector.getElementAt(thisIndex: TCensus;
   const destElement: pointer);
 
 begin
@@ -668,7 +673,7 @@ begin
 end;
 
 // Set the element at the specified index
-procedure AVector.setElementAt(thisIndex: longword;
+procedure AVector.setElementAt(thisIndex: TCensus;
   const newElement: pointer);
 
 begin
@@ -719,11 +724,11 @@ function AVector.readFrom(const Source: AStream): TStreamIOSize;
 
 var
   // Stores the number of elements to read from the stream
-  streamElementCount: longword;
+  streamElementCount: TCensus;
   // Stores the size of elements to read from the stream
   streamElementSize: longword;
   // Stores the insertion index for items read from the stream
-  streamElementIndex: longword;
+  streamElementIndex: TCensus;
 
 begin
   result := 0;
@@ -788,7 +793,7 @@ begin
 end;
 
 // Retrieve the size of the buffer used by the array
-function AVector.bufferLength: longword;
+function AVector.bufferLength: TCensus;
 
 begin
   result := myBufferLength;
@@ -802,7 +807,7 @@ begin
 end;
 
 // Retrieve the number of elements in the array
-function AVector.length: longword;
+function AVector.length: TCensus;
 
 begin
   result := myLength;

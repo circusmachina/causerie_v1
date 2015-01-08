@@ -1,11 +1,11 @@
 causerie v1.0: A simple, elegant and powerful programming language.  
-Copyright (C) 2014 by [Michael Malicoat](http://www.circusmachina.com/gladius/Profiles/Michael)  
+Copyright (C) 2014-2015 by [Michael Malicoat](http://www.circusmachina.com/gladius/Profiles/Michael)  
 [Home page](http://causerie.circusmachina.com) |
 [Source](https://github.com/circusmachina/causerie_v1) |
 [Source documentation](http://projects.circusmachina.com/causerie/) |
-[Bug tracker](http://mantis.circusmachina.com)
+[Bug tracker](http://monkeywrench.circusmachina.com)
 
-This file was last modified by Michael Malicoat on 19 June 2014.
+This file was last modified by Michael Malicoat on 1 January 2015.
 
 ## License ##
 This program is free software: you can redistribute it and/or modify it under 

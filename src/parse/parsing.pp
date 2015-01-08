@@ -1,5 +1,5 @@
 { parsing.pp - A library of basic parser classes useful in larger projects.
-  Copyright (C) 2011-2013 Michael Malicoat.
+  Copyright (C) 2011-2014 Michael Malicoat.
 
   This program is free software: you can redistribute it and/or modify it
   under the terms of the GNU General Public License as published by the
@@ -26,8 +26,6 @@
       @item(statement handling: @link(AStatement) and its descendants)
       @item(symbols and symbol tables: @link(ASymbol), @link(ASymbolTable) and
             their descendants)
-      @item(intermediate code streams: @link(ABookmarkedStream) and its
-            descendants)
   )
 
   All of this functionality routinely serves as the basis for my projects, and
@@ -37,6 +35,9 @@
 unit parsing;
 
 {$mode objfpc}{$H+}
+
+{ Define this for debug output }
+{DEFINE DEBUG}
 
 interface
 
@@ -60,13 +61,12 @@ uses
 {$I parsedlanguageparsers.inc}
 {$I symbolparsers.inc}
 {$I sourceparsers.inc}
-{$I statements.inc}
-{$I sourcestatements.inc}
 
 {$UNDEF ReadInterface}
 
 resourcestring
   {$DEFINE ReadResourceStrings}
+  {$I languages.inc}
   {$I tokens.inc}
   {$I parsermessages.inc}
   {$I parsers.inc}
@@ -95,8 +95,6 @@ uses
 {$I parsedlanguageparsers.inc}
 {$I symbolparsers.inc}
 {$I sourceparsers.inc}
-{$I statements.inc}
-{$I sourcestatements.inc}
 
 {$UNDEF ReadImplementation}
 

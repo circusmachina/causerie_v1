@@ -33,16 +33,6 @@ type ABookmarkedStream = class(AStreamWrapper)
     MyBookmarks: AStreamBookmarkDictionary;
 
   public
-    { Construct a new bookmarked stream instance that will wrap around the
-      given stream.
-
-      If @code(takeOwnershipOfTarget) is @true, then the bookmarked stream
-      instance will assume ownership of @code(Target) and will free it when it
-      is, itself freed.
-    }
-    constructor around(const ThisTarget: AStream;
-      const takeOwnershipOfTarget: boolean = true); virtual;
-
     { Initializer }
     function init: boolean; override;
 
@@ -72,6 +62,12 @@ type ABookmarkedStream = class(AStreamWrapper)
 
       The reference returned by this routine may be used to query the dictionary
       of bookmarks, but it should NOT be freed by the caller.
+
+      @bold(Note:) For instances of @link(ABookmarkedInputStream) and its
+      descendants, this routine may return @nil until
+      @link(ABookmarkedInputStream.readBookmarksAt) is called; this behavior
+      allows descendant classes to define custom bookmarks type and a bookmarks
+      dictionary to handle them.
     }
     function Bookmarks: AStreamBookmarkDictionary; virtual;
 end;
@@ -88,6 +84,9 @@ end;
 }
 type ABookmarkedOutputStream = class(ABookmarkedStream)
   public
+    { Initializer }
+    function init: boolean; override;
+
     { Write @code(count) bytes from @code(source) to the stream.
 
       This method overrides the behavior inherited from
@@ -118,6 +117,39 @@ type ABookmarkedOutputStream = class(ABookmarkedStream)
     function MarkPosition(const thisBookmarkName: string): AStreamBookmark;
       virtual;
 
+    { Record the current stream position as the beginning of a span with the
+      given name.
+
+      If a bookmark with @code(thisSpanName) already exists in the
+      dictionary of bookmarks maintained by the stream, then the position of
+      that bookmark is updated.  Otherwise, a new bookmark is created and
+      entered into the dictionary.
+
+      If @code(thisSpanName) is an empty string, this routine does nothing.
+
+      @return(A reference to the bookmark that was updated.  This will either
+      be a new bookmark or an existing bookmark that had
+      @code(thisSpanName).  In either case, the caller should NOT free the
+      reference returned by this routine; that will be done when the bookmarked
+      stream is destroyed.)
+    }
+    function BeginSpan(const thisSpanName: string): AStreamBookmarkSpan;
+      virtual;
+
+    { Record the current stream position as the end of a span with the given
+      name.
+
+      If no bookmark is found with @code(thisSpanName) then this routine does
+      nothing.  If a bookmark is found, but it is not an instance of
+      @link(ABookmarkSpan), then this routine does nothing.
+
+      @return(A reference to the bookmark that was updated, if found.  The
+      caller should NOT free the reference returned by this routine.  If no
+      bookmark was updated, this routine will return @nil.)
+    }
+    function EndSpan(const thisSpanName: string): AStreamBookmarkSpan;
+      virtual;
+
     { Write the dictionary of bookmarks to the stream at the specified
       position.
 
@@ -141,6 +173,21 @@ type ABookmarkedOutputStream = class(ABookmarkedStream)
     }
     function writeBookmarksAt(const thisPosition: TStreamOffset = -1): TStreamOffset;
       virtual;
+
+    { Write the dictionary of bookmarks at the current position in the stream.
+
+      This method simply calls
+      @link(ABookmarkedOutputStream.writeBookmarksAt Self.writeBookmarksAt),
+      passing the value of
+      @link(AStreamWrapper.position Self.position).
+
+      @return(The position in the stream (relative to the beginning of the
+      stream) at which the bookmarks were written.  This value can be used,
+      among other things, as part of a stream header so that the bookmarks can
+      be recalled from the stream later.  If the bookmarks could not be
+      written, this routine will return a negative value.)
+    }
+    function writeBookmarks: TStreamOffset; virtual;
 end;
 
 // ABookmarkedInputStream ******************************************************
@@ -169,32 +216,38 @@ type ABookmarkedInputStream = class(ABookmarkedStream)
     { Read the dictionary of bookmarks from the specified position within the
       stream.
 
-      This method moves the stream position pointer to the position specified
-      and then calls
-      @link(ABinaryTree.readFrom AStreamBookmarkDictionary.readFrom) on
-      @link(ABookmarkedStream.Bookmarks ABookmarkedInputStream.Bookmarks),
-      passing @code(Self) as the source stream.  The stream position pointer
-      is then returned to its previous location.
+      This method moves the stream position pointer to the position specified,
+      then calls @link(AStreamBookmarksDictionary.readFrom).  When all bookmarks
+      have been read, the stream position pointer is returned to its previous
+      location.
+
+      If @link(ABookmarkedStream.Bookmarks Self.Bookmarks) is @nil, this method
+      will construct an instance of @link(AStreamBookmarksDictionary) to
+      manage the bookmarks read.  This behavior allows descendant classes to
+      construct an instance of a different type of bookmarks dictionary, before
+      this method is called (as part of their initialization routines, for
+      instance), which can handle custom bookmark types.
 
       @return(The total number of bytes read from the stream.)
     }
     function readBookmarksAt(const thisPosition: TStreamOffset): TStreamIOSize;
       virtual;
+
+    { Read the dictionary of bookmarks from the current position within the
+      stream.
+
+      This method simply calls
+      @link(ABookmarkedInputStream.readBookmarksAt Self.readBookmarksAt),
+      passing the value of
+      @link(AStreamWrapper.position Self.position).
+
+      @return(The total number of bytes read from the stream.)
+    }
+    function readBookmarks: TStreamIOSize; virtual;
 end;
 {$ENDIF}
 {$IFDEF ReadImplementation}
 // ABookmarkedStream ***********************************************************
-// Constructor
-constructor ABookmarkedStream.around(const ThisTarget: AStream;
-  const takeOwnershipOfTarget: boolean = true);
-
-begin
-  inherited new;
-
-  MyTarget := ThisTarget;
-  myOwnTarget := takeOwnershipOfTarget;
-end;
-
 // Initializer
 function ABookmarkedStream.init: boolean;
 
@@ -203,9 +256,8 @@ begin
 
   if result then
   begin
-    MyBookmarks := AStreamBookmarkDictionary.new;
-
-    result := MyBookmarks <> nil;
+    // We do not construct the bookmarks dictionary here
+    MyBookmarks := nil;
   end;
 end;
 
@@ -249,6 +301,20 @@ begin
 end;
 
 // ABookmarkedOutputStream *****************************************************
+// Initializer
+function ABookmarkedOutputStream.init: boolean;
+
+begin
+  result := inherited init;
+
+  if result then
+  begin
+    MyBookmarks := AStreamBookmarkDictionary.new;
+
+    result := MyBookmarks <> nil;
+  end;
+end;
+
 // Write to the stream
 function ABookmarkedOutputStream.write(const count: TStreamIOSize;
   const source): TStreamIOSize;
@@ -286,6 +352,47 @@ begin
     Result.setPosition(Self.position);
 end;
 
+// Mark the beginning of a span
+function ABookmarkedOutputStream.BeginSpan(const thisSpanName: string): AStreamBookmarkSpan;
+
+begin
+  Result := nil;
+
+  if (thisSpanName = '') or (MyTarget = nil) then
+    exit;
+
+  // Check to see if the bookmark already exists
+  Result := AStreamBookmarkSpan(MyBookmarks.BookmarkNamed(thisSpanName));
+
+  // Not an existing bookmark, so create a new one
+  if Result = nil then
+  begin
+    Result := AStreamBookmarkSpan.atCurrentPositionIn(Self, thisSpanName);
+    // Insert it into the dictionary
+    MyBookmarks.insertLeaf(Result);
+  end
+
+  else
+    // Update the position of the bookmark
+    Result.setPosition(Self.position);
+end;
+
+// Mark the end of a span
+function ABookmarkedOutputStream.EndSpan(const thisSpanName: string): AStreamBookmarkSpan;
+
+begin
+  Result := nil;
+
+  if (thisSpanName = '') or (MyTarget = nil) then
+    exit;
+
+  // Check to see if the bookmark exists
+  Result := AStreamBookmarkSpan(MyBookmarks.BookmarkNamed(thisSpanName));
+
+  if (Result <> nil) and (Result is AStreamBookmarkSpan) then
+    Result.setEndPosition(Self.position);
+end;
+
 // Write the dictionary of bookmarks to the specified position in the stream
 function ABookmarkedOutputStream.writeBookmarksAt(const thisPosition: TStreamOffset = -1): TStreamOffset;
 
@@ -298,7 +405,9 @@ begin
   previousPosition := Self.position;
 
   // Move to the specified position
-  Self.setPosition(thisPosition);
+  if thisPosition <> previousPosition then
+    Self.setPosition(thisPosition);
+
   // and store the current absolute position for return to the caller
   result := Self.position;
 
@@ -308,6 +417,13 @@ begin
 
   // Return to the previous position in the stream
   Self.setPosition(previousPosition);
+end;
+
+// Write the dictionary of bookmarks at the current position in the stream
+function ABookmarkedOutputStream.writeBookmarks: TStreamOffset;
+
+begin
+  result := Self.writeBookmarksAt(Self.position);
 end;
 
 // ABookmarkedInputStream ******************************************************
@@ -331,6 +447,17 @@ var
   previousPosition: TStreamOffset;
 
 begin
+  result := 0;
+
+  { If a descendant class has not already constructed a bookmarks dictionary, we
+    do so now.
+  }
+  if MyBookmarks = nil then
+    MyBookmarks := AStreamBookmarkDictionary.new;
+
+  if MyBookmarks = nil then
+    exit;
+
   // Get the current position in the stream
   previousPosition := Self.position;
 
@@ -344,5 +471,11 @@ begin
   Self.setPosition(previousPosition);
 end;
 
+// Read the list of bookmarks at the current position in the stream
+function ABookmarkedInputStream.readBookmarks: TStreamIOSize;
+
+begin
+  result := Self.readBookmarksAt(Self.position);
+end;
 {$ENDIF}
 

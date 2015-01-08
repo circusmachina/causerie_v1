@@ -42,6 +42,15 @@ type AParsedLanguageParser = class(AParser)
     MyLanguage: AParsedLanguage;
 
   public
+    { Construct a new parser that will inherit the properties of its parent
+      parser.
+
+      This method builds on the behavior inherited from
+      @code(AParser.forSource): it ensures that the new parser also inherits
+      the value of it @code(ThisParent)'s @link(AParsedLanguageParser.Language).
+    }
+    constructor forSource(const ThisParent: AParser); overload; override;
+
     { Initializer }
     function init: boolean; override;
 
@@ -59,6 +68,15 @@ type AParsedLanguageParser = class(AParser)
       indicate all is well, it checks to determine whether
       @link(AParsedLanguageParser.Language) is @nil.
 
+      For classes that override this method, the generally-accepted rule is
+      that, although @link(AParser.CurrentToken Self.CurrentToken)
+      @italic(should) refer to the token which ended the given statement when
+      this method exits, the actual process of resynchronizing the parser to
+      ensure that is done by @link(AParsedLanguageParser.parseUntil).  If you
+      would rather do so in this method, you will need to override
+      @link(AParsedLanguageParser.parseUntil), if you use it, as you will
+      otherwise the confuse the parser.
+
       @return(A negative value if an error has occurred before any parsing
       was done.  This will most likely occur if @link(AParser.Source),
       @link(AParser.Log), or @link(AParsedLanguageParser.Language) are invalid
@@ -68,6 +86,39 @@ type AParsedLanguageParser = class(AParser)
     }
     function parse: int64; override;
 
+    { Parse tokens or statements until one of the tokens in the specified rule
+      is encountered.
+
+      This method looks up the rule identified by @code(thisRule) by
+      calling @link(AParsedLanguage.SyntaxRule) on
+      @link(AParsedLanguageParser.Language Self.Language).  If the
+      specified rule is found, then this method loops, calling
+      @link(AParsedLanguageParser.parse Self.parse) repeatedly until a token
+      from the specified rule is encountered.
+
+      Each time through the loop, after
+      @link(AParsedLanguageParser.parse Self.parse) returns, this method
+      checks to see if the end of the stream has been reached.  If it has, and
+      @link(TOKCAT_EOS) is not part of @code(thisRule), then this method will
+      raise a fatal error to indicate that the end of the stream was not
+      supposed to be encountered.  Otherwise, the routine calls
+      @link(AParsedLanguageParser.resyncTo Self.resyncTo), passing
+      @link(RULE_END_STATEMENT) to ensure that the end of the statement has
+      actually been reached.  It then calls
+      @link(AParser.NextToken Self.NextToken) and loops again.
+
+      When this method exits,
+      @link(AParser.CurrentToken AParsedLanguageStatementBlock.CurrentToken)
+      should refer to a token from @code(thisRule) or the end of the stream.
+
+      @raises(AParserFatalError if the end of the source stream is encountered
+      before a token from @code(thisRule) is found -- unless
+      @link(TOKCAT_EOS) is part of @code(thisRule).)
+
+      @return(The total number of errors that occurred while parsing.)
+    }
+    function parseUntil(const thisRule: TSortKey): int64; overload; virtual;
+
     { Resynchronize the parser to one of the tokens in the specified
       @code(rule).
 
@@ -80,21 +131,7 @@ type AParsedLanguageParser = class(AParser)
 
       If the specified @code(rule) is not found, then this routine does nothing.
     }
-    procedure resyncTo(const rule: TSortKey); virtual;
-
-    { Resynchronize the parser to one of the tokens in the specified
-      @code(rule).
-
-      This method is designed to allow the parser to recover after a syntax
-      error.  It logs a syntax error to indicate that the current token is
-      not expected, then looks up the specified @code(rule) in the list of
-      syntax rules specified by @link(AParsedLanguageParser.Language).  If the
-      rule is found, it calls @link(AParser.resyncTo), passing the rule
-      reference to that routine.
-
-      If the specified @code(rule) is not found, then this routine does nothing.
-    }
-    procedure resyncTo(const rule: string); virtual;
+    procedure resyncTo(const rule: TSortKey); virtual; overload;
 
     { Skip tokens until one of the tokens in the specified @code(rule) is
       encountered.
@@ -112,16 +149,16 @@ type AParsedLanguageParser = class(AParser)
       silenced tokens from being written to their intermediate code streams.
     }
     procedure skipTo(const rule: TSortKey;
-      const silenceInterveningTokens: boolean = true); virtual;
+      const silenceInterveningTokens: boolean = true); overload; virtual;
 
-    { Skip tokens until one of the tokens in the specified @code(rule) is
-      encountered.
+    { Skip over tokens until one is encountered that is not a part of the
+      specified @code(rule).
 
       This method looks up the specified @code(rule) in the list of syntax
       rules specified by @link(AParsedLanguageParser.Language).  If the rule is
-      found, it calls @link(AParser.skipTo), passing the rule reference to that
-      routine.  If the specified @code(rule) is not found, then this routine
-      does nothing.
+      found, it calls @link(AParser.skipOver), passing the rule reference to
+      that routine.  If the specified @code(rule) is not found, then this
+      routine does nothing.
 
       If @code(silenceInterveningTokens) is @true, then all tokens encountered
       before @code(opcode) will have their @code(silenced) property set by a
@@ -129,8 +166,8 @@ type AParsedLanguageParser = class(AParser)
       does not make use of this behavior, descendant classes may prevent
       silenced tokens from being written to their intermediate code streams.
     }
-    procedure skipTo(const rule: string;
-      const silenceInterveningTokens: boolean = true); virtual;
+    procedure skipOver(const rule: TSortKey;
+      const silenceInterveningTokens: boolean = true); overload; virtual;
 
     // Properties --------------------------------------------------------------
     { Retrieve a reference to the language used to parse the source.
@@ -142,6 +179,16 @@ type AParsedLanguageParser = class(AParser)
 end;
 {$ENDIF}
 {$IFDEF ReadImplementation}
+// Constructor
+constructor AParsedLanguageParser.forSource(const ThisParent: AParser);
+
+begin
+  inherited forSource(ThisParent);
+
+  if ThisParent is AParsedLanguageParser then
+    MyLanguage := AParsedLanguageParser(ThisParent).Language;
+end;
+
 // Initializer
 function AParsedLanguageParser.init: boolean;
 
@@ -158,9 +205,13 @@ end;
 destructor AParsedLanguageParser.destroy;
 
 begin
-  // Free the language definition, if any
-  if MyLanguage <> nil then
-    MyLanguage.free;
+  // Free items if we have no parent
+  if MyParent = nil then
+  begin
+    // Free the language definition, if any
+    if MyLanguage <> nil then
+      freeAndNil(MyLanguage);
+  end;
 
   inherited destroy;
 end;
@@ -176,7 +227,64 @@ begin
   begin
     // Check to see whether or not we have a valid language
     if MyLanguage = nil then
-      result := -1;
+    begin
+      // We don't -- yet -- but we can inherit from our parent
+      if (MyParent <> nil) and (MyParent is AParsedLanguageParser) then
+        MyLanguage := AParsedLanguageParser(MyParent).Language
+
+      // Otherwise, we indicate an error
+      else
+        result := -1;
+    end;
+  end;
+end;
+
+// Parse tokens until a token from the specified rule is encountered
+function AParsedLanguageParser.parseUntil(const thisRule: TSortKey): int64;
+
+var
+  // Refers to the rule in question
+  Rule: ASyntaxRule;
+
+begin
+  result := -1;
+
+  Rule := MyLanguage.SyntaxRule(thisRule);
+
+  if Rule = nil then
+    exit;
+
+  result := 0;
+
+  // If this is the first token in the source, then CurrentToken may be @nil
+  if CurrentToken = nil then
+    NextToken;
+
+  while not(CurrentToken.isPartOf(Rule)) do
+  begin
+    // Parse the next statement
+    result := result + Self.parse;
+
+    // Was the end of the stream encountered?
+    if CurrentToken.opcode = TOKCAT_EOS then
+    begin
+      // Was it expected?
+      if Rule.has(TOKCAT_EOS) then
+        break
+
+      else
+        raise FatalError(parsFatalUnexpectedEOS, []);
+    end;
+
+    // Is the current token the one sough
+    if CurrentToken.isPartOf(Rule) then
+      break;
+
+    // Resync to the end of the statement
+    //Self.resyncTo(RULE_END_STATEMENT);
+
+    // Get the next token after the end of the statement
+    NextToken;
   end;
 end;
 
@@ -185,15 +293,7 @@ procedure AParsedLanguageParser.resyncTo(const rule: TSortKey);
 
 begin
   if MyLanguage <> nil then
-    inherited resyncTo(MyLanguage.SyntaxRule(rule));
-end;
-
-// Resync to the specified rule
-procedure AParsedLanguageParser.resyncTo(const rule: string);
-
-begin
-  if MyLanguage <> nil then
-    inherited resyncTo(MyLanguage.SyntaxRule(rule));
+    resyncTo(MyLanguage.SyntaxRule(rule));
 end;
 
 // Skip to one of the tokens in the specified rule
@@ -202,16 +302,16 @@ procedure AParsedLanguageParser.skipTo(const rule: TSortKey;
 
 begin
   if MyLanguage <> nil then
-    inherited skipTo(MyLanguage.SyntaxRule(rule), silenceInterveningTokens);
+    skipTo(MyLanguage.SyntaxRule(rule), silenceInterveningTokens);
 end;
 
-// Skip to one of the tokens in the specified rule
-procedure AParsedLanguageParser.skipTo(const rule: string;
+// Skip over the tokens in the specified rule
+procedure AParsedLanguageParser.skipOver(const rule: TSortKey;
   const silenceInterveningTokens: boolean = true);
 
 begin
   if MyLanguage <> nil then
-    inherited skipTo(MyLanguage.SyntaxRule(rule), silenceInterveningTokens);
+    skipOver(MyLanguage.SyntaxRule(rule), silenceInterveningTokens);
 end;
 
 // Properties ------------------------------------------------------------------

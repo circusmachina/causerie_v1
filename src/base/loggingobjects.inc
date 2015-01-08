@@ -35,7 +35,7 @@ type ALoggingObject = class(APrintingObject)
     function init: boolean; override;
 
     { Log the specified items to the log.  This method is simply a pass-through
-      method for @link(ALog.write).
+      method for @link(ALog.print).
     }
     function log(const items: array of const): TStreamIOSize; virtual;
 
@@ -165,7 +165,7 @@ begin
   result := 0;
 
   if MyLog <> nil then
-    result := MyLog.write(items);
+    result := MyLog.print(items);
 end;
 
 // Log a note to the log

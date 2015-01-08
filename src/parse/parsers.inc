@@ -28,8 +28,25 @@
   )
 
   The parser will create and dispose of its own scanner while parsing.
+
+  Parsers descend from @link(ANode) because they are designed to be chained
+  together: the top-level (program) parser will construct a block-level parser,
+  which will itself construct a block-level or statement-level parser, which
+  will construct an expression parser -- and so on down the line.  The
+  advantages of this approach include readability -- no long chain of
+  @code(case) statements -- and flexibility: new additions to the language
+  usually require only the addition of a new type of statement- or
+  expression-level parser.
+
+  Each time a higher-level parser constructs a lower-level parser, the new
+  parser is linked to the @link(ANode.Child Child) property.  The most recent
+  lower-level parser created by a given parser can be obtained by calling
+  @link(AParser.CurrentElement).
+
+  Note that, although instances of @link(AParser) descend from @link(ANode),
+  they do not implement any of the streaming behavior for obvious reasons.
 }
-type AParser = class(AnObject)
+type AParser = class(ANode)
   protected
     { Refers to the scanner used to tokenize the source }
     MyScanner: AScanner;
@@ -48,25 +65,42 @@ type AParser = class(AnObject)
       respective classes in order for @link(AParser.parse) to succeed.
     }
     constructor forSource(const ThisSource: AStream;
-      const ThisLog: ALog); virtual;
+      const ThisLog: ALog); virtual; overload;
+
+    { Construct a new parser that will inherit the properties of its parent
+      parser.
+
+      The new parser will inherit the values of @code(ThisParent)'s
+      @link(AParser.Scanner Scanner), @link(AParser.Source Source) and
+      @link(AParser.Log Log).
+    }
+    constructor forSource(const ThisParent: AParser); virtual; overload;
 
     { Initializer }
     function init: boolean; override;
 
     { Destroy the parser instance.
 
-      This method frees the token list and the scanner associated with the
-      parser, if any, then calls the inherited routine.
+      If @link(ANode.Parent Self.Parent) is @nil, then that indicates this is
+      a top-level parser, and so this method will free the token list and
+      scanner associated with the parser, if any, before calling the inherited
+      routine.
+
+      Otherwise, this method first pops its current token and pushes it back
+      into the parent's list, so that the parent has the token which ended the
+      program element.  Then it @code(nils) the related properties so
+      they are not freed (since the parent will still be using them) before
+      calling the inherited routine.
     }
     destructor destroy; override;
 
     { Parse the source.
 
-      The base definition of this method does nothing more than check to
-      ensure that @link(AParser.Source), @link(AParser.Log), and
-      @link(AParser.Tokens) are all valid references (not @nil).  Descendant
-      classes may call this routine before performing their own checks and
-      parsing the specified source.
+      The base definition of this method first checks to ensure that
+      @link(AParser.Source Self.Source), @link(AParser.Log Self.Log), and
+      @link(AParser.Tokens Self.Tokens) are all valid references (not @nil).
+      Descendant classes may call this routine before performing their own
+      checks and parsing the specified source.
 
       @return(A negative value if an error has occurred before any parsing
       was done.  This will most likely occur if either @link(AParser.Source) or
@@ -75,6 +109,58 @@ type AParser = class(AnObject)
       value of zero (0) indicates all is well.)
     }
     function parse: int64; virtual;
+
+    { Parse statements until the specified opcode is reached.
+
+      This method may be called on to parse tokens or statements from the
+      source until a specific keyword or delimiter is reached.  It will most
+      commonly be used to process function bodies, which are usually terminated
+      by a keyword or delimiter of some kind.
+
+      Internally, this method simply loops by calling
+      @link(AParser.parse Self.parse) and then checking the
+      current token when that method returns.  If the end of the stream is
+      reached (and it is not the opcode desired), then this method will flag a
+      fatal error.
+
+      When this method exits,
+      @link(AParser.CurrentToken Self.CurrentToken) should refer to
+      @code(thisOpcode) or to the end of the stream.
+
+      @raises(AParserFatalError if the end of the source stream is encountered
+      before @code(thisOpcode) is found -- unless @code(thisOpcode) is
+      @link(TOKCAT_EOS).)
+
+      @returns(The total number of syntax errors that have occurred while
+      parsing.  This is the accumulated total from successive calls to
+      @link(AParser.parse Self.parse).)
+    }
+    function parseUntil(const thisOpcode: TOpcode): int64; overload; virtual;
+
+    { Parse until a token from the specified rule is encountered.
+
+      This method may be called to parse statements or tokens from the
+      source until one of a number of opcodes is reached.  It will most
+      commonly be used to process loops, which are normally terminated by a
+      keyword, delimiter, or expression.
+
+      Internally, this method simply loops by calling
+      @link(AParser.parse Self.parse) and then checking the current token when
+      that method returns.  If the end of the stream is reached (and it is not
+      part of the specified rule), then this method will flag a fatal error.
+
+      When this method exits, @link(AParser.CurrentToken Self.CurrentToken)
+      should refer to a token from @code(ThisRule) or the end of the stream.
+
+      @raises(AParserFatalError if the end of the source stream is encountered
+      before a token from @code(ThisRule) is found -- unless
+      @link(TOKCAT_EOS) is part of @code(ThisRule).)
+
+      @returns(The total number of syntax errors that have occurred while
+      parsing.  This is the accumulated total from successive calls to
+      @link(AParser.parse Self.parse).)
+    }
+    function parseUntil(const ThisRule: ASyntaxRule): int64; overload; virtual;
 
     { Retrieve a reference to the most recent token parsed from the source.
 
@@ -85,6 +171,15 @@ type AParser = class(AnObject)
       If the caller wishes to pop a token from the token list, it should do so
       by calling @link(ATokenList.Pop) on @link(AParser.Tokens).  It is then
       responsible for freeing the token itself.
+
+      If @link(AParser.Tokens Self.Tokens) is @nil, this routine will construct
+      a new instance of @link(ATokenList) to hold the tokens parsed by the
+      parser.  Additionally, after creating the new list, the routine checks to
+      see if  @link(ANode.Parent Self.Parent) is @italic(not) @nil; if not,
+      it means that that this parser was been created to parse a sub-element
+      (such as a statement block or statement), and this method will push a copy
+      of the previous token from its parent's list onto the new list, as well as
+      the ACTUAL current token from the parent.
     }
     function CurrentToken: AToken; virtual;
 
@@ -205,6 +300,35 @@ type AParser = class(AnObject)
     procedure skipTo(const ThisRule: ASyntaxRule;
       const silenceInterveningTokens: boolean = true); virtual;
 
+    { Skip over tokens in the source until one is encountered that does not
+      match the specified @code(opcode), or until the end of the stream is
+      reached.
+
+      If @code(silenceInterveningTokens) is @true, then all tokens encountered
+      until one that is not @code(opcode) will have their @code(silenced)
+      property set by a call to @link(AToken.setSilenced).  Although
+      @link(AParser) does not make use of this behavior, descendant classes may
+      prevent silenced tokens from being written to their intermediate code
+      streams.
+    }
+    procedure skipOverToken(const opcode: TOpcode;
+      const silenceInterveningTokens: boolean = true); virtual;
+
+    { Skip over tokens in the source until one is encountered that is not part
+      of @code(ThisRule), or until the end of the stream is reached.
+
+      If @code(ThisRule) is @nil, then this method does nothing.
+
+      If @code(silenceInterveningTokens) is @true, then all tokens encountered
+      until one that is not @code(opcode) will have their @code(silenced)
+      property set by a call to @link(AToken.setSilenced).  Although
+      @link(AParser) does not make use of this behavior, descendant classes may
+      prevent silenced tokens from being written to their intermediate code
+      streams.
+    }
+    procedure skipOver(const ThisRule: ASyntaxRule;
+      const silenceInterveningTokens: boolean = true); virtual;
+
     { Output a note to the log.
 
       This method is defined for convenience; it automates the construction of
@@ -285,27 +409,53 @@ type AParser = class(AnObject)
       parser.  In any event, the reference is managed by the parser and should
       NOT be freed by the caller.
     }
-    function Scanner: AScanner;
+    function Scanner: AScanner; virtual;
 
     { Retrieve a reference to the log used by the parser for status and error
       output.
 
       This reference should NOT be freed by the caller.
     }
-    function Log: ALog;
+    function Log: ALog; virtual;
 
     { Retrieve a reference to the source stream being parsed by the parser.
 
       This reference should NOT be freed by the caller.
     }
-    function Source: AStream;
+    function Source: AStream; virtual;
 
     { Retrieve a reference to the list of tokens being managed by the parser.
 
       This reference should NOT be freed by the caller; that will be done by
       the parser when it is, itself, freed.
     }
-    function Tokens: ATokenList;
+    function Tokens: ATokenList; virtual;
+
+    { Retrieve a reference to the most recent program element (a statement,
+      statement block, expression) created by this parser for use in parsing the
+      source.  Calling this routine is functionally equivalent to casting the
+      return value from @link(ANode.Child AParser.Child) to an instance of
+      @link(AParser).
+
+      This function may return @nil if the parser implementation does not make
+      use of sub-parsers to process statements, statement blocks, or
+      expressions.
+    }
+    function CurrentElement: AParser; virtual;
+
+    { Retrieve a reference to the second most recent program element (a
+      statement, statement block, expression) created by this parser for use in
+      parsing the source.  Calling this routine is functionally equivalent to
+      casting the return value from @link(ANode.Previous AParser.Previous),
+      when called on @link(AParser.CurrentElement), to an instance of
+      @link(AParser).
+
+      This function may return @nil if the parser implementation does not make
+      use of sub-parsers to process statement, statement blocks, or
+      expressions -- or if the parser does not cache such program elements, but
+      instead disposes of them as soon as they have done their work.
+    }
+    function PreviousElement: AParser; virtual;
 end;
 {$ENDIF}
 {$IFDEF ReadResourceStrings}
@@ -338,6 +488,21 @@ begin
   MyLog := ThisLog;
 end;
 
+// Constructor
+constructor AParser.forSource(const ThisParent: AParser);
+
+begin
+  inherited asChildOf(ThisParent);
+
+  // Inherit the properties of the parent
+  if ThisParent <> nil then
+  begin
+    MySource := ThisParent.Source;
+    MyLog := ThisParent.Log;
+    MyScanner := ThisParent.Scanner;
+  end;
+end;
+
 // Initializer
 function AParser.init: boolean;
 
@@ -357,13 +522,25 @@ end;
 destructor AParser.destroy;
 
 begin
+  /// If we have a parent...
+  if (MyParent <> nil) and (MyParent is AParser) then
+  begin
+    { Push our current token back to our parent, so that it has the token which
+      ended this statement or statement block
+    }
+    if MyTokens <> nil then
+      AParser(MyParent).Tokens.push(MyTokens.Pop);
+
+    MyScanner := nil;
+  end;
+
   // Free the scanner, if any
   if MyScanner <> nil then
-    MyScanner.free;
+    freeAndNil(MyScanner);
 
   // Free the list of tokens
   if MyTokens <> nil then
-    MyTokens.free;
+    freeAndNil(MyTokens);
 
   inherited destroy;
 end;
@@ -374,26 +551,134 @@ function AParser.parse: int64;
 begin
   result := -1;
 
-    // Construct a token list to manage tokens parsed from the source
-  if MyTokens = nil then
-    MyTokens := ATokenList.new;
+  if MyLog <> nil then
+    // Add a default counter for errors
+    MyLog.Counters.addLeaf(ACounter.named(lgerCounterName));
 
-  if (MySource <> nil) and (MyLog <> nil) and (MyTokens <> nil) then
+  if (MySource <> nil) and (MyLog <> nil) then
     result := 0;
+end;
+
+// Parse from the source until the specified token is encountered
+function AParser.parseUntil(const thisOpcode: TOpcode): int64;
+
+begin
+  result := 0;
+
+  // If this is the first token in the source, then CurrentToken may be @nil
+  if CurrentToken = nil then
+    NextToken;
+
+  while CurrentToken.opcode <> thisOpcode do
+  begin
+    // Parse the next statement
+    result := result + Self.parse;
+
+    // Was the end of the stream encountered?
+    if CurrentToken.opcode = TOKCAT_EOS then
+    begin
+      // Was it expected?
+      if thisOpcode = TOKCAT_EOS then
+        break
+
+      else
+        raise FatalError(parsFatalUnexpectedEOS, []);
+    end;
+
+    // Is the current token the one sought?
+    if CurrentToken.opcode = thisOpcode then
+      break;
+
+    // Get the next token after the end of the statement
+    NextToken;
+  end;
+end;
+
+// Parse from the source until a token in the specified rule is encountered
+function AParser.parseUntil(const ThisRule: ASyntaxRule): int64;
+
+begin
+  result := 0;
+
+  // We can do nothing without a valid rule
+  if ThisRule = nil then
+    exit;
+
+  // If this is the first token in the source, then CurrentToken may be @nil
+  if CurrentToken = nil then
+    NextToken;
+
+  while not(CurrentToken.isPartOf(ThisRule)) do
+  begin
+    // Parse the next statement
+    result := result + Self.parse;
+
+    // Was the end of the stream encountered?
+    if CurrentToken.opcode = TOKCAT_EOS then
+    begin
+      // Was it expected?
+      if ThisRule.has(TOKCAT_EOS) then
+        break
+
+      else
+        raise FatalError(parsFatalUnexpectedEOS, []);
+    end;
+
+    // Is the current token the one sought?
+    if ThisRule.has(CurrentToken.opcode) then
+      break;
+
+    // Get the next token after the end of the statement
+    NextToken;
+  end;
 end;
 
 // Retrieve a reference to the most recent token parsed from the source
 function AParser.CurrentToken: AToken;
 
 begin
+  // Construct a token list to manage tokens parsed from the source
+  if MyTokens = nil then
+  begin
+    MyTokens := ATokenList.new;
+
+    { If we are a sub-element, such as a statement, then we need a couple of
+      tokens
+    }
+    if (MyParent <> nil) and (MyParent is AParser) then
+    begin
+      { Push a copy of the parent's previous token (the one before this
+        statement) onto our list
+      }
+      if AParser(MyParent).PreviousToken <> nil then
+        MyTokens.push(AToken(AToken.shallowCopyOf(AParser(MyParent).PreviousToken)));
+
+      { Push the ACTUAL current token from our parent (the token that began this
+        statement) onto our list
+      }
+      if AParser(MyParent).CurrentToken <> nil then
+        MyTokens.Push(AParser(MyParent).Tokens.Pop);
+    end;
+  end;
+
   Result := MyTokens.LastToken;
+{$IFDEF DEBUG}
+  write(Self.className, '.CurrentToken(): ');
+  if Result <> nil then
+    writeln(SysUtils.format('%s: %s (%.8X) @%X', [Result.className, Result.toString, Result.opcode, ptrUint(Result)]))
+  else
+    writeln('NIL');
+{$ENDIF}
 end;
 
 // Retrieve a reference to the second-most-recent token parsed from the source
 function AParser.PreviousToken: AToken;
 
 begin
-  Result := MyTokens.LastToken;
+  Result := nil;
+
+  if MyTokens <> nil then
+    Result := MyTokens.LastToken;
 
   if Result <> nil then
     Result := AToken(MyTokens.LastToken.Previous);
@@ -417,13 +702,21 @@ begin
 
   if MyScanner <> nil then
   begin
-    if MyScanner.CurrentToken <> nil then
-      MyScanner.CurrentToken.setSilenced(silenceCurrentToken);
+    if Self.CurrentToken <> nil then
+      Self.CurrentToken.setSilenced(silenceCurrentToken);
 
     MyScanner.Next;
     MyTokens.push(MyScanner.CurrentToken);
     Result := MyTokens.LastToken;
   end;
+
+{$IFDEF DEBUG}
+  write(Self.className, '.NextToken(): ');
+  if Result <> nil then
+    writeln(SysUtils.format('%s: %s (%.8X) @%X', [Result.className, Result.toString, Result.opcode, ptrUint(Result)]))
+  else
+    writeln('NIL');
+{$ENDIF}
 end;
 
 // Retrieve the next token from the source, but only if the condition is met
@@ -530,6 +823,44 @@ begin
   end;
 end;
 
+// Skip over tokens that match the specified opcode
+procedure AParser.skipOverToken(const opcode: TOpcode;
+  const silenceInterveningTokens: boolean = true);
+
+begin
+  // Ensure we have a token
+  if CurrentToken = nil then
+    exit;
+
+  while CurrentToken.opcode = opcode do
+  begin
+    // Check for the end of the source
+    if CurrentToken.opcode = TOKCAT_EOS then
+      break;
+
+    Self.NextToken(silenceInterveningTokens);
+  end;
+end;
+
+// Skip over tokens that are in the specified rule
+procedure AParser.skipOver(const ThisRule: ASyntaxRule;
+  const silenceInterveningTokens: boolean = true);
+
+begin
+  // Ensure we have a token and a rule
+  if (CurrentToken = nil) or (ThisRule = nil) then
+    exit;
+
+  while CurrentToken.isPartOf(ThisRule) do
+  begin
+    // Check for the end of the source
+    if CurrentToken.opcode = TOKCAT_EOS then
+      break;
+
+    Self.NextToken(silenceInterveningTokens);
+  end;
+end;
+
 // Output a note to the log
 procedure AParser.note(const fmt: string; const params: array of const);
 
@@ -542,7 +873,7 @@ begin
     exit;
 
   ThisNote := AParserNote.inSource(MyScanner, fmt, params);
-  MyLog.write([ThisNote]);
+  MyLog.print([ThisNote, lineEnding]);
   ThisNote.free;
 end;
 
@@ -558,7 +889,7 @@ begin
     exit;
 
   ThisHint := AParserHint.inSource(MyScanner, fmt, params);
-  MyLog.write([ThisHint]);
+  MyLog.print([ThisHint, lineEnding]);
   ThisHint.free;
 end;
 
@@ -574,7 +905,7 @@ begin
     exit;
 
   ThisWarning := AParserWarning.inSource(MyScanner, fmt, params);
-  MyLog.write([ThisWarning]);
+  MyLog.print([ThisWarning, lineEnding]);
   ThisWarning.free;
 end;
 
@@ -590,7 +921,7 @@ begin
     exit;
 
   ThisError := AParserSyntaxError.inSource(MyScanner, fmt, params);
-  MyLog.write([ThisError]);
+  MyLog.print([ThisError, lineEnding]);
   ThisError.free;
 end;
 
@@ -605,7 +936,7 @@ begin
     exit;
 
   Result := AParserFatalError.inSource(MyScanner, fmt, params);
-  MyLog.write([Result]);
+  MyLog.print([Result, lineEnding]);
 end;
 
 // Properties ------------------------------------------------------------------
@@ -636,6 +967,24 @@ function AParser.Tokens: ATokenList;
 begin
   Result := MyTokens;
 end;
+
+// Retrieve the most recent element parsed by the parser
+function AParser.CurrentElement: AParser;
+
+begin
+  Result := AParser(Self.Child);
+end;
+
+// Retrieve the second most recent element parsed by the parser
+function AParser.PreviousElement: AParser;
+
+begin
+  Result := nil;
+
+  if Self.CurrentElement <> nil then
+    Result := AParser(Self.CurrentElement.Previous);
+end;
+
 {$ENDIF}
 
 

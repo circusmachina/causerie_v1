@@ -20,7 +20,7 @@
 // ALoggedItem *****************************************************************
 { This class represents a basic item that can be logged to an instance of
   @link(ALog).  While it is possible to log anything to @link(ALog), by means
-  of @link(ALog.write), classes that descend from @link(ALoggedItem) will also
+  of @link(ALog.print), classes that descend from @link(ALoggedItem) will also
   update their associated counters when logged, providing a way to track how
   many of each type of item is logged.
 

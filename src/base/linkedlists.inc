@@ -29,7 +29,7 @@ type ALinkedList = class (APrintingObject, CanStream)
     { Refers to the last item in the list }
     MyLastItem: ANode;
     { Stores the current number of items in the list }
-    myCensus: longint;
+    myCensus: TCensus;
 
   public
     { Initializer }
@@ -58,7 +58,7 @@ type ALinkedList = class (APrintingObject, CanStream)
       very large lists, therefore, it can be inefficient.
 
       Index zero (0) represents the first node in the list, while index
-      (@link(ALinkedList.census) @code(- 1)) represents the last node in the
+      (@link(ALinkedList.census) @code(-1)) represents the last node in the
       list.  The first and last nodes in the list can also be obtained by
       calling @link(ALinkedList.FirstItem) and @link(ALinkedList.LastItem),
       respectively.
@@ -67,7 +67,7 @@ type ALinkedList = class (APrintingObject, CanStream)
       nodes in the list, then this routine will return the last node in the
       list.
     }
-    function itemAt(index: longint): ANode; virtual;
+    function itemAt(index: TNodeRelativeIndex): ANode; virtual;
 
     { Insert @code(ThisItem) at the specified @code(index) within the list.
 
@@ -75,12 +75,12 @@ type ALinkedList = class (APrintingObject, CanStream)
       make room for the new item.
 
       Index zero (0) represents the first node in the list, while index
-      (@link(ALinkedList.census) @code(- 1)) represents the last node in the
+      (@link(ALinkedList.census) @code(-1)) represents the last node in the
       list.  If @code(index) specifies a value that is greater than the number
       of nodes in the list, then this routine will insert @code(ThisItem)
       at the end of the list.
     }
-    procedure insertItemAt(index: longint; const ThisItem: ANode);
+    procedure insertItemAt(index: TNodeRelativeIndex; const ThisItem: ANode);
       virtual;
 
     { Adds @code(thisItem) to the end of the list.
@@ -91,12 +91,46 @@ type ALinkedList = class (APrintingObject, CanStream)
       added and deleted from the list, it is likely that their indices will
       change.
     }
-    function addItem(const ThisItem: ANode): longint; virtual;
+    function addItem(const ThisItem: ANode): TNodeAbsoluteIndex; virtual;
+
+    { Condenses the values in the list into a delimited string.
+
+      This method uses the value of @code(delimiter) to separate the values in
+      the list, which are all condensed into a single string that is returned to
+      the caller.  If @code(delimiter) is not supplied by the caller, or if it
+      is an empty string, then the value of @link(lstDefaultDelimiter) is
+      used.
+
+      The base behavior of this method is to iterate through each node in the
+      list and call @link(ANode.toString) on them.  The values returned are
+      collected into a single (potentially long) string, wherein each value is
+      separated from the next by @code(delimiter).  Descendant classes may
+      override this behavior.
+    }
+    function implode(delimiter: string = ''): AnsiString; virtual;
+
+    { Add the items specified in @code(thisList) to the list.
+
+      This method assumes that @code(thisList) contains one or more values that
+      are separated by a delimiter of some kind (e.g., a comma).  It uses the
+      value of @code(delimiter) to split the string into its component values;
+      these values are then added as individual items to the list.  If
+      @code(delimiter) is not supplied, or if it is an empty string, then
+      the value of @link(llstDefaultDelimiter) is used.
+
+      This method does nothing in the base instance of @link(ALinkedList); it is
+      defined as a counterpoint to @link(ALinkedList.implode) and to ensure
+      consistent behavior across descendants of @link(ALinkedList).
+
+      @return(The total number of items added to the list.)
+    }
+    function explode(thisList: AnsiString;
+      delimiter: string = ''): TCensus; virtual;
 
     { Removes the node at the specified @code(index) from the list.
 
       Index zero (0) represents the first node in the list, while index
-      (@link(ALinkedList.census) @code(- 1)) represents the last node in the
+      (@link(ALinkedList.census) @code(-1)) represents the last node in the
       list.  If @code(index) specifies a value that is greater than the number
       of nodes in the list, then this routine will remove the last item in
       the list.
@@ -104,7 +138,7 @@ type ALinkedList = class (APrintingObject, CanStream)
       The node is removed, but is not freed.  It is the caller's responsibility
       to free the node when it is no longer required.
     }
-    function removeItemAt(const index: longint): ANode; virtual;
+    function removeItemAt(const index: TNodeRelativeIndex): ANode; virtual;
 
     { Deletes the node at the specified @code(index) from the list.
 
@@ -112,7 +146,7 @@ type ALinkedList = class (APrintingObject, CanStream)
       node from the list; it then calls @code(TObject.free) on that node.
 
       Index zero (0) represents the first node in the list, while index
-      (@link(ALinkedList.census) @code(- 1)) represents the last node in the
+      (@link(ALinkedList.census) @code(-1)) represents the last node in the
       list.  If @code(index) specifies a value that is greater than the number
       of nodes in the list, then this routine will remove the last item in
       the list.
@@ -124,7 +158,7 @@ type ALinkedList = class (APrintingObject, CanStream)
 
       @return(@true if the node was found and was deleted; @false otherwise).)
     }
-    function deleteItemAt(const index: longint): boolean; virtual;
+    function deleteItemAt(const index: TNodeRelativeIndex): boolean; virtual;
 
     { Construct a shallow copy of the other object.
 
@@ -201,7 +235,7 @@ type ALinkedList = class (APrintingObject, CanStream)
 
       @return(The total number of bytes printed to @code(Dest).)
     }
-    function printTo(const Dest: AStream;
+    function printTo(const Dest: ATextOutputStream;
       prefix: AnsiString = '';
       suffix: AnsiString = ''): TStreamIOSize; override;
 
@@ -218,7 +252,7 @@ type ALinkedList = class (APrintingObject, CanStream)
       nodes.  It is assumed -- but not required -- that instances of
       @link(ALinkedList) will only contain top-level nodes.
     }
-    function census: longint; virtual;
+    function census: TCensus; virtual;
 
     { Retrieve a reference to the first node in the list.
 
@@ -275,6 +309,19 @@ end;
     each list item occupies a line of its own.
   }
   llstDefaultNodePrintingSuffix = lineEnding;
+
+  { This string is used as the default delimiter by @link(AList.explode) and
+    @link(AList.implode) when no other delimiter is supplied.
+  }
+  llstDefaultDelimiter = ',';
+
+  { This string can be passed to @link(AList.implode) to cause its output to
+    be formatted into a single column composed of many rows instead of a
+    lengthy string.
+
+    This string is defined for convenience and is not used by default.
+  }
+  llstDelimiterTabbedColumn = lineEnding + #9;
 {$ENDIF}
 {$IFDEF ReadImplementation}
 // ALinkedList *****************************************************************
@@ -328,7 +375,8 @@ begin
       MyLastItem := ThisItem;
     end
 
-    else MyLastItem := ThisItem;
+    else
+      MyLastItem := ThisItem;
 
     if MyFirstItem = nil then
       MyFirstItem := MyLastItem;
@@ -345,7 +393,7 @@ end;
    ALinkedList::LastItem() is updated to reflect the removal of this item from
    the list.  If there are no items in the list, this routine returns #nil.
 *}
-function ALinkedList.popItem: ANode;
+function ALinkedList.PopItem: ANode;
 
 begin
   Result := nil;
@@ -354,6 +402,7 @@ begin
   begin
     Result := MyLastItem;
     MyLastItem := MyLastItem.Previous;
+
     // Detach the last item from the list
     Result.detach;
     dec(myCensus);
@@ -372,11 +421,7 @@ end;
 
    \return The ANode instance that resides as the specified \p index.
 *}
-function ALinkedList.itemAt(index: longint): ANode;
-
-var
-  // Loop counter
-  i: longword;
+function ALinkedList.itemAt(index: TNodeRelativeIndex): ANode;
 
 begin
   Result := nil;
@@ -394,14 +439,9 @@ begin
   else if index >= myCensus then
     Result := MyLastItem
 
-  else begin
+  else
     // Start with the first item
-    Result := MyFirstItem;
-
-    // Loop through the list to get the result
-    for i := 1 to index do
-      Result := Result.Next;
-  end;
+    Result := MyFirstItem.SiblingAtAbsolutePosition(index);
 end;
 
 {* Inserts \p ThisItem into the list at the specified \p index.  If \p index
@@ -411,7 +451,7 @@ end;
 
    If \p ThisItem is #nil, this routine does nothing.
 *}
-procedure ALinkedList.insertItemAt(index: longint;
+procedure ALinkedList.insertItemAt(index: TNodeRelativeIndex;
   const ThisItem: ANode);
 
 var
@@ -433,7 +473,7 @@ begin
 
     else begin
       // Insert the item
-      BumpedItem := Self.itemAt(index);
+      BumpedItem := Self.ItemAt(index);
 
       if BumpedItem <> nil then
       begin
@@ -458,7 +498,7 @@ end;
    which indicates the position of \p ThisItem within the list.  This routine
    will return zero (0) if \p ThisItem is #nil.
 *}
-function ALinkedList.addItem(const ThisItem: ANode): longint;
+function ALinkedList.addItem(const ThisItem: ANode): TNodeAbsoluteIndex;
 
 begin
   result := 0;
@@ -489,13 +529,13 @@ end;
 
    \return The item at the specified \p index.
 *}
-function ALinkedList.removeItemAt(const index: longint): ANode;
+function ALinkedList.RemoveItemAt(const index: TNodeRelativeIndex): ANode;
 
 begin
   Result := nil;
 
   // Fetch the item
-  Result := itemAt(index);
+  Result := Self.ItemAt(index);
 
   if Result <> nil then begin
     if Result = MyFirstItem then
@@ -512,7 +552,7 @@ begin
 end;
 
 // Delete the item at the specified index
-function ALinkedList.deleteItemAt(const index: longint): boolean;
+function ALinkedList.deleteItemAt(const index: TNodeRelativeIndex): boolean;
 
 var
   // Refers to the item in question
@@ -521,13 +561,54 @@ var
 begin
   result := false;
 
-  ThisItem := Self.removeItemAt(index);
+  ThisItem := Self.RemoveItemAt(index);
 
   if ThisItem <> nil then
   begin
     ThisItem.free;
     result := true;
   end;
+end;
+
+{* Condenses the list into a delimited string.  This string will contain each
+   value in the list, separated by the delimiter specified by
+   delimiter.  If there are no items in the list, an empty string
+   is returned.
+
+   \return A string, as described above.
+*}
+function ALinkedList.implode(delimiter: string = ''): AnsiString;
+
+var
+  // Refers to an item from the list
+  ThisItem: ANode;
+
+begin
+  result := '';
+
+  if delimiter = '' then
+    delimiter := llstDefaultDelimiter;
+
+  ThisItem := Self.FirstItem;
+
+  while ThisItem <> nil do
+  begin
+    result := result + ThisItem.toString;
+
+    if ThisItem.Next <> nil then
+      result := result + delimiter;
+
+    ThisItem := ThisItem.Next;
+  end;
+end;
+
+// Expand the list from a delimited string; does nothing here
+function ALinkedList.explode(thisList: AnsiString;
+  delimiter: string): TCensus;
+
+begin
+  // Does nothing; descendant classes must implement this method
+  result := 0;
 end;
 
 // Construct a shallow copy of the other object
@@ -551,7 +632,7 @@ begin
 
     while ThisItem <> nil do
     begin
-      Self.addItem(MyItemType.shallowCopyOf(ThisItem));
+      Self.addItem(ANode(MyItemType.shallowCopyOf(ThisItem)));
       ThisItem := ThisItem.Next;
     end;
   end;
@@ -598,7 +679,7 @@ function ALinkedList.readFrom(const Source: AStream): TStreamIOSize;
 
 var
   // Stores the number of items in the list, as read from the stream
-  entryCount: longint;
+  entryCount: TCensus;
   // Refers to a new item created for the list
   NewItem: ANode;
 
@@ -646,7 +727,7 @@ end;
    \return The total number of bytes written to \p Dest.  This value will be
    zero (0) if \p Dest is #nil.
 *}
-function ALinkedList.printTo(const Dest: AStream;
+function ALinkedList.printTo(const Dest: ATextOutputStream;
   prefix: AnsiString = '';
   suffix: AnsiString = ''): TStreamIOSize;
 
@@ -673,7 +754,7 @@ begin
 end;
 
 /// Retrieves the total number of items in the list
-function ALinkedList.census: longint;
+function ALinkedList.census: TCensus;
 
 begin
   result := myCensus;

@@ -21,9 +21,9 @@
     <VersionInfo>
       <UseVersionInfo Value="True"/>
       <AutoIncrementBuild Value="True"/>
-      <RevisionNr Value="1"/>
-      <BuildNr Value="9"/>
-      <StringTable FileDescription="A simple, elegant, and powerful programming language." LegalCopyright="Copyright (C) 2014 Michael Malicoat.  Distributed under the terms of the GNU GPL." ProductName="causerie" ProductVersion=""/>
+      <RevisionNr Value="2"/>
+      <BuildNr Value="21"/>
+      <StringTable Comments="This is free software, distributed under the terms of the GNU GPL.  There is NO WARRANTY; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE." FileDescription="A simple, elegant, and powerful programming language." LegalCopyright="Copyright (C) 2014 - 2015 Michael Malicoat. " ProductName="causerie" ProductVersion=""/>
     </VersionInfo>
     <BuildModes Count="1">
       <Item1 Name="Default" Default="True"/>
@@ -41,7 +41,7 @@
         <PackageName Value="LazUtils"/>
       </Item1>
     </RequiredPackages>
-    <Units Count="12">
+    <Units Count="23">
       <Unit0>
         <Filename Value="cause.lpr"/>
         <IsPartOfProject Value="True"/>
@@ -86,13 +86,58 @@
         <IsPartOfProject Value="True"/>
       </Unit9>
       <Unit10>
-        <Filename Value="src/parse/statements.inc"/>
+        <Filename Value="src/commandline/dynamicoptions.inc"/>
         <IsPartOfProject Value="True"/>
       </Unit10>
       <Unit11>
-        <Filename Value="src/parse/sourcestatements.inc"/>
+        <Filename Value="src/commandline/booleanoptions.inc"/>
         <IsPartOfProject Value="True"/>
       </Unit11>
+      <Unit12>
+        <Filename Value="src/commandline/numericoptions.inc"/>
+        <IsPartOfProject Value="True"/>
+      </Unit12>
+      <Unit13>
+        <Filename Value="src/commandline/listoptions.inc"/>
+        <IsPartOfProject Value="True"/>
+      </Unit13>
+      <Unit14>
+        <Filename Value="src/commandline/optiondictionaries.inc"/>
+        <IsPartOfProject Value="True"/>
+      </Unit14>
+      <Unit15>
+        <Filename Value="src/commandline/linearc.inc"/>
+        <IsPartOfProject Value="True"/>
+      </Unit15>
+      <Unit16>
+        <Filename Value="src/commandline/linearcparsers.inc"/>
+        <IsPartOfProject Value="True"/>
+      </Unit16>
+      <Unit17>
+        <Filename Value="src/parse/sourceexpressions.inc"/>
+        <IsPartOfProject Value="True"/>
+      </Unit17>
+      <Unit18>
+        <Filename Value="src/commandline/linearcstatements.inc"/>
+        <IsPartOfProject Value="True"/>
+      </Unit18>
+      <Unit19>
+        <Filename Value="src/commandline/linearcexpressions.inc"/>
+        <IsPartOfProject Value="True"/>
+      </Unit19>
+      <Unit20>
+        <Filename Value="src/commandline/linearcapplications.inc"/>
+        <IsPartOfProject Value="True"/>
+      </Unit20>
+      <Unit21>
+        <Filename Value="src/base/elfstreams.inc"/>
+        <IsPartOfProject Value="True"/>
+      </Unit21>
+      <Unit22>
+        <Filename Value="src/commandline/linearc.pp"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="linearc"/>
+      </Unit22>
     </Units>
   </ProjectOptions>
   <CompilerOptions>
@@ -101,8 +146,8 @@
       <Filename Value="build/$(TargetCPU)-$(TargetOS)/cause"/>
     </Target>
     <SearchPaths>
-      <IncludeFiles Value="$(ProjOutDir)"/>
-      <OtherUnitFiles Value="src/base;src/parse"/>
+      <IncludeFiles Value="src/parse;$(ProjOutDir)"/>
+      <OtherUnitFiles Value="src/base;src/parse;src/commandline"/>
       <UnitOutputDirectory Value="lib/$(TargetCPU)-$(TargetOS)"/>
     </SearchPaths>
     <Other>

@@ -96,11 +96,10 @@ type AVariantListItem = class(ANode)
   // CanPrint implementation ---------------------------------------------------
     { Construct and return a string representation of the node.
 
-      Unlike the method inherited from @link(ANode), which returns a string
-      indicating the name of the node and how many children it has, this method
-      simply calls @code(Variants.varToStr) to cast
-      @code(AVariantListItem.value) to a string, then returns the resulting
-      value.
+      In accordance with the criteria described in
+      @link(APrintingObject.toString), this method calls
+      @code(Variants.varToStr) to cast @link(AVariantListItem.value Self.value)
+      to a string, then returns the resulting value.
     }
     function toString: AnsiString; override;
 
@@ -123,6 +122,15 @@ end;
 }
 type AVariantList = class(ALinkedList)
   public
+    { Construct a new variant list that contains the specified values.
+
+      This method calls @link(AVariantList.pushSeveral) to insert the values in
+      @code(values) into the list after the new instance has been constructed
+      and initialized.  If @code(values) is empty, then an empty list is
+      created by this routine.
+    }
+    constructor withValues(const values: array of const); virtual;
+
     { Construct a new variant list by expanding the values provided in
       @code(thisList).
 
@@ -135,33 +143,10 @@ type AVariantList = class(ALinkedList)
       this routine.
     }
     constructor from(const thisList: string; const thisDelimiter: string = '');
+      virtual;
 
     { Initializer }
     function init: boolean; override;
-
-    { Add the items specified in @code(thisList) to the list.
-
-      This method assumes that @code(thisList) contains one or more values that
-      are separated by a delimiter of some kind (e.g., a comma).  It uses the
-      value of @code(delimiter) to split the string into its component values;
-      these values are then added as individual items to the list.  If
-      @code(delimiter) is not supplied by the caller, or if it is an empty
-      string, then the value of @link(slstDefaultDelimiter) is used.
-
-      @return(The total number of items added to the list.)
-    }
-    function explode(thisList: string;
-      delimiter: string = ''): longword; virtual;
-
-    { Condenses the values in the list into a delimited string.
-
-      This method uses the value of @code(delimiter) to separate the values in
-      the list, which are all condensed into a single string that is returned to
-      the caller.  If @code(delimiter) is not supplied by the caller, or if it
-      is an empty string, then the value of @link(slstDefaultDelimiter) is
-      used.
-    }
-    function implode(delimiter: string = ''): string; virtual;
 
     { Adds @code(thisValue) to the end of the list.
 
@@ -172,7 +157,31 @@ type AVariantList = class(ALinkedList)
       remain the same for this item if other items are added or removed at
       locations PRIOR to the index returned.)
     }
-    function add(thisValue: Variant): longint; virtual;
+    function add(const thisValue: Variant): TNodeAbsoluteIndex; virtual;
+
+    { Add several values to the end of the list.
+
+      This method calls @link(TVarRecToVariant) in order to convert each of the
+      values specified in @code(values) to a @code(Variant) value.  It then
+      calls @link(AVariantList.add) to add the value to the list.
+
+      @return(The total number of items added to the list.)
+    }
+    function addSeveral(const values: array of const): TCensus; virtual;
+
+    { Add the items specified in @code(thisList) to the list.
+
+      This method assumes that @code(thisList) contains one or more values that
+      are separated by a delimiter of some kind (e.g., a comma).  It uses the
+      value of @code(delimiter) to split the string into its component values;
+      these values are then added as individual items to the list.  If
+      @code(delimiter) is not supplied by the caller, or if it is an empty
+      string, then the value of @link(llstDefaultDelimiter) is used.
+
+      @return(The total number of items added to the list.)
+    }
+    function explode(thisList: string;
+      delimiter: string = ''): longword; override;
 
     { Pushes the specified variant value onto the list, as the last item in the
       list.  Calling @link(AVariantList.pop) immediately after this routine will
@@ -181,7 +190,15 @@ type AVariantList = class(ALinkedList)
       This method constructs a new instance of @link(AVariantListItem) and then
       calls @link(ALinkedList.pushItem) to push the item onto the list.
     }
-    procedure push(thisValue: Variant); virtual;
+    procedure push(const thisValue: Variant); virtual;
+
+    { Push several values onto the list.
+
+      This method calls @link(TVarRecToVariant) in order to convert each of the
+      values specified in @code(values) to a @code(Variant) value.  It then
+      calls @link(AVariantList.push) to add the value to the list.
+    }
+    procedure pushSeveral(const values: array of const); virtual;
 
     { Pops the last item from the list.  This will be the value most recently
       added to the list by a call to @link(AVariantList.add) or
@@ -203,8 +220,8 @@ type AVariantList = class(ALinkedList)
       If @code(index) specifies a value that is greater than the number of items
       in the list, then @code(thisString) is inserted at the end of the list.
     }
-    procedure insertAt(const index: longint; const thisValue: Variant);
-      virtual;
+    procedure insertAt(const index: TNodeRelativeIndex;
+      const thisValue: Variant); virtual;
 
     { Performs a recursive search to determine whether or not the specified
       value exists within the list.  For very large lists, this search can
@@ -230,7 +247,7 @@ type AVariantList = class(ALinkedList)
       found.)
     }
     function indexOf(const thisValue: Variant;
-      const afterIndex: longint = 0): longint; virtual;
+      const afterIndex: TNodeRelativeIndex = 0): longint; virtual;
 
   // Properties ----------------------------------------------------------------
     { Retrieve the value of the item at the specified index.
@@ -248,7 +265,7 @@ type AVariantList = class(ALinkedList)
       If an invalid index is passed to this routine, it will return an empty
       string.
     }
-    function item(const thisIndex: longint): Variant; virtual;
+    function item(const thisIndex: TNodeRelativeIndex): Variant; virtual;
 
     { Set the value of the item at the specified index.
 
@@ -260,9 +277,41 @@ type AVariantList = class(ALinkedList)
       if any.  An empty string will be returned if an invalid index is passed
       to this routine.)
     }
-    function setItem(const thisIndex: longint;
+    function setItem(const thisIndex: TNodeRelativeIndex;
       const thisValue: Variant): Variant; virtual;
 end;
+
+// Utility functions ***********************************************************
+{ This function converts the value in @code(value) to a @code(Variant).
+
+  This function converts @code(value) as follows:
+  @unorderedList(
+    @item(If @code(value.vtype) is @code(vtBoolean), the resulting variant is
+      cast as a @code(WordBool).)
+    @item(If @code(value.vtype) is @code(vtInteger), the resulting variant is
+      cast as a @code(longint).)
+    @item(If @code(value.vtype) is @code(vtInt64), the resulting variant is
+      cast as a @code(int64).)
+    @item(If @code(value.vtype) is @code(vtQWord), the resulting variant is
+      cast as a @code(qword).)
+    @item(If @code(value.vtype) is @code(vtExtended), the resulting variant is
+      cast as a @code(double), with some potential loss of precision, since
+      @code(Variant)s cannot store @code(extended) values.)
+    @item(If @code(value.vtype) is @code(vtCurrency), the resulting variant is
+      cast as a @code(currency) type.)
+    @item(If @code(value.vtype) is @code(vtChar), @code(vtWideChar),
+      @code(vtString), @code(vtPChar), @code(vtPWideChar), @code(vtAnsiString),
+      @code(vtWideString), or @code(vtUnicodeString), the resulting variant is
+      cast as an @code(AnsiString).)
+    @item(If @code(value.vtype) is @code(vtObject), @code(vtClass), or
+      @code(vtInterface), the resulting variant is cast as a @code(pointer).)
+    @item(If @code(value.vtype) is @code(vtVariant), the resulting variant is
+      set to the value of @code(value.vVariant).)
+  )
+
+  In all other cases, the resulting variant is set to @code(Variants.Null).
+}
+function TVarRecToVariant(const value: TVarRec): Variant;
 {$ENDIF}
 {$IFDEF ReadImplementation}
 // AVariantListItem ************************************************************
@@ -396,6 +445,15 @@ begin
 end;
 
 // AVariantList ****************************************************************
+// Construct a variant list with the specified values
+constructor AVariantList.withValues(const values: array of const);
+
+begin
+  inherited new;
+
+  Self.pushSeveral(values);
+end;
+
 {* Constructs and initializes a new instance of a variant list.  This routine
    sets AVariantList.delimiter to \p thisDelimiter and then calls
    AVariantList.explode() to process \p thisList.
@@ -424,6 +482,39 @@ begin
   end;
 end;
 
+{* Adds the specified value to the list.  This routine calls
+   AList.addItem().
+
+   \return The index of the new item.  This index is not guaranteed to be
+   static, as a call to AVariantList.insertAt() that specifies a lower index
+   will push all higher indexes "down" the list.
+*}
+function AVariantList.add(const thisValue: Variant): TNodeAbsoluteIndex;
+
+begin
+  result := Self.addItem(AVariantListItem.withValue(thisValue));
+end;
+
+// Add several items to the list
+function AVariantList.addSeveral(const values: array of const): TCensus;
+
+var
+  // Loop counter
+  i: longword;
+
+begin
+  result := 0;
+
+  if System.length(values) = 0 then
+    exit;
+
+  for i := 0 to (System.high(values)) do
+  begin
+    Self.add(TVarRecToVariant(values[i]));
+    inc(result);
+  end;
+end;
+
 {* Builds the list from a delimited list of items.  This routine uses the value
    of delimiter to determine where to separate the list items.
 
@@ -431,7 +522,7 @@ end;
    (0) if \p thisList is an empty string.
 *}
 function AVariantList.explode(thisList: string;
-  delimiter: string = ''): longword;
+  delimiter: string = ''): TCensus;
 
 var
   // Stores an item retrieved from the list
@@ -442,7 +533,7 @@ begin
   if thisList <> '' then
   begin
     if delimiter = '' then
-      delimiter := slstDefaultDelimiter;
+      delimiter := llstDefaultDelimiter;
 
     // Loop through the string
     while System.length(thisList) > 0 do
@@ -461,57 +552,28 @@ begin
   end;
 end;
 
-{* Condenses the list into a delimited string.  This string will contain each
-   value in the list, separated by the delimiter specified by
-   AVariantList.delimiter.  If there are no items in the list, an empty string
-   is returned.
-
-   \return A string, as described above.
-*}
-function AVariantList.implode(delimiter: string = ''): string;
-
-var
-  // Refers to an item from the list
-  ThisItem: AVariantListItem;
-
-begin
-  result := '';
-  ThisItem := AVariantListItem(Self.FirstItem);
-
-  if delimiter = '' then
-    delimiter := slstDefaultDelimiter;
-
-  while ThisItem <> nil do
-  begin
-    result := result + varToStr(ThisItem.value);
-
-    if ThisItem.Next <> nil then
-      result := result + delimiter;
-
-    ThisItem := AVariantListItem(ThisItem.Next);
-  end;
-end;
-
-{* Adds the specified value to the list.  This routine calls
-   AList.addItem().
-
-   \return The index of the new item.  This index is not guaranteed to be
-   static, as a call to AVariantList.insertAt() that specifies a lower index
-   will push all higher indexes "down" the list.
-*}
-function AVariantList.add(thisValue: Variant): longint;
-
-begin
-  result := Self.addItem(AVariantListItem.withValue(thisValue));
-end;
-
 {* Pushes the specified value onto the end of the list.  This routine calls
    AList.pushItem().
 *}
-procedure AVariantList.push(thisValue: Variant);
+procedure AVariantList.push(const thisValue: Variant);
 
 begin
   Self.pushItem(AVariantListItem.withValue(thisValue));
+end;
+
+// Push several values onto the list
+procedure AVariantList.pushSeveral(const values: array of const);
+
+var
+  // Loop counter
+  i: longword;
+
+begin
+  if System.length(values) = 0 then
+    exit;
+
+  for i := 0 to (System.high(values)) do
+    Self.push(TVarRecToVariant(values[i]));
 end;
 
 {* Pops the last value from the end of the list.  This routine calls
@@ -540,7 +602,7 @@ end;
 {* Inserts the specified value at the specified index.  This routine calls
    AList.insertItemAt().
 *}
-procedure AVariantList.insertAt(const index: longint;
+procedure AVariantList.insertAt(const index: TNodeRelativeIndex;
   const thisValue: Variant);
 
 begin
@@ -559,13 +621,13 @@ end;
 
 // Find the index of the specified text
 function AVariantList.indexOf(const thisValue: Variant;
-  const afterIndex: longint = 0): longint;
+  const afterIndex: TNodeRelativeIndex = 0): longint;
 
 var
   // Refers to the current item
   ThisItem: AVariantListItem;
   // Stores the current index
-  currentIndex: longint;
+  currentIndex: TNodeRelativeIndex;
 
 begin
   result := -1;
@@ -600,7 +662,7 @@ end;
    \return The value at \p thisIndex.  If \p thisIndex is out of range, this
    routine will return Null.
 *}
-function AVariantList.item(const thisIndex: longint): Variant;
+function AVariantList.item(const thisIndex: TNodeRelativeIndex): Variant;
 
 var
   // Refers to the item at the specified index
@@ -618,7 +680,7 @@ end;
    routine will add a new item to the end of the list that contains the
    specified value
 *}
-function AVariantList.setItem(const thisIndex: longint;
+function AVariantList.setItem(const thisIndex: TNodeRelativeIndex;
   const thisValue: Variant): Variant;
 
 var
@@ -642,6 +704,73 @@ begin
     ThisItem := AVariantListItem.withValue(thisValue);
     if ThisItem <> nil then
       Self.pushItem(ThisItem);
+  end;
+end;
+
+// Utility functions ***********************************************************
+// Convert a TVarRec to a Variant
+function TVarRecToVariant(const value: TVarRec): Variant;
+
+begin
+  result := Variants.null;
+
+  case value.vType of
+    vtInteger:
+      result := value.vInteger;
+
+    vtBoolean:
+      result := value.vBoolean;
+
+    vtChar:
+      result := value.vChar;
+
+    vtWideChar:
+      result := System.wideCharLenToString(@value.vWideChar, 1);
+
+    vtExtended:
+      result := double(value.vExtended^);
+
+    vtString:
+      result := value.vString^;
+
+    vtPointer:
+      result := value.vPointer;
+
+    vtPChar:
+      result := value.vPChar^;
+
+    vtObject:
+      result := pointer(value.VObject);
+
+    vtClass:
+      result := pointer(value.VClass);
+
+    vtPWideChar:
+      result := System.wideCharToString(value.vpWideChar);
+
+    vtAnsiString:
+      result := AnsiString(value.vAnsiString);
+
+    vtCurrency:
+      result := value.vCurrency^;
+
+    vtVariant:
+      result := value.vVariant^;
+
+    vtInterface:
+      result := value.vInterface;
+
+    vtWideString:
+      result := WideString(value.vWideString);
+
+    vtInt64:
+      result := value.vInt64^;
+
+    vtUnicodeString:
+      result := UnicodeString(value.vUnicodeString);
+
+    vtQWord:
+      result := value.vQWord^;
   end;
 end;
 {$ENDIF}

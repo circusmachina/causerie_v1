@@ -70,7 +70,7 @@ type ABufferedStream = class(AStreamWrapper)
     }
     constructor around(const ThisTarget: AStream;
       const takeOwnershipOfTarget: boolean = true;
-      const bufferSize: longword = bfstDefaultBufferSize); virtual;
+      const bufferSize: longword = bfstDefaultBufferSize); reintroduce; virtual;
 
     { Initializer }
     function init: boolean; override;
@@ -302,10 +302,7 @@ constructor ABufferedStream.around(const ThisTarget: AStream;
   const bufferSize: longword = bfstDefaultBufferSize);
 
 begin
-  inherited new;
-
-  MyTarget := ThisTarget;
-  myOwnTarget := takeOwnershipOfTarget;
+  inherited around(ThisTarget, takeOwnershipOfTarget);
 
   try
     System.setLength(myBuffer, bufferSize);

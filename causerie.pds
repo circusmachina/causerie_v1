@@ -64,9 +64,10 @@ Item_0=src/base
 Item_1=src/parse
 
 [Files]
-Count=2
+Count=3
 Item_0=src/base/classwork.pp
 Item_1=src/parse/parsing.pp
+Item_2=src/commandline/linearc.pp
 
 [HyphenatedWords]
 Count=0
@@ -76,7 +77,7 @@ Count=0
 
 [VizGraphOtherArguments]
 Count=1
-Item_0=-Gsize=13,13
+Item_0=-Gsize=13,25
 
 [IgnoreWords]
 Count=0

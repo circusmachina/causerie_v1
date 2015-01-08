@@ -6,7 +6,7 @@ msgid "failed to allocate the %d bytes needed to buffer data for %s"
 msgstr ""
 
 #: classwork.bnlfstringrepresentation
-msgid "%s at index %d with key %d"
+msgid "[%d]: %d"
 msgstr ""
 
 #: classwork.bntrdefaultnodeprintingprefix
@@ -72,14 +72,6 @@ msgstr ""
 
 #: classwork.ctlsprintedsummaryheader
 msgid "Total number of"
-msgstr ""
-
-#: classwork.dctedefaultdelimiter
-msgid "="
-msgstr ""
-
-#: classwork.dctestringrepresentation
-msgid "%s%s%s"
 msgstr ""
 
 #: classwork.errdefaultmessage
@@ -282,6 +274,11 @@ msgstr ""
 msgid "warning: %s"
 msgstr ""
 
+#: classwork.llstdefaultdelimiter
+msgctxt "classwork.llstdefaultdelimiter"
+msgid ","
+msgstr ""
+
 #: classwork.llstdefaultnodeprintingprefix
 msgctxt "classwork.llstdefaultnodeprintingprefix"
 msgid "#9"
@@ -302,6 +299,11 @@ msgctxt "classwork.llststringrepresentationsingular"
 msgid "%s that contains %d node"
 msgstr ""
 
+#: classwork.mapedefaultdelimiter
+msgctxt "classwork.mapedefaultdelimiter"
+msgid "="
+msgstr ""
+
 #: classwork.nodestringrepresentationplural
 msgid "%s with %d children"
 msgstr ""
@@ -314,8 +316,12 @@ msgstr ""
 msgid "failed to create and initialize an instance of \"%s\""
 msgstr ""
 
-#: classwork.slstdefaultdelimiter
-msgid ","
+#: classwork.sbspstringrepresentationplural
+msgid "%s => from %d to %d (%d bytes)"
+msgstr ""
+
+#: classwork.sbspstringrepresentationsingular
+msgid "%s => from %d to %d (%d byte)"
 msgstr ""
 
 #: classwork.stbmstringrepresentation
@@ -323,7 +329,11 @@ msgid "%s => %d"
 msgstr ""
 
 #: classwork.stlfstringrepresentation
-msgid "%s at index %d named \"%s\""
+msgid "[%d]: \"%s\""
+msgstr ""
+
+#: classwork.toswrapdefaultpadcharacter
+msgid " "
 msgstr ""
 
 #: classwork.vctrerrorallocatingmemory
@@ -338,6 +348,612 @@ msgstr ""
 msgid "%s that contains %d item"
 msgstr ""
 
+#: classwork.vinfcomments
+msgid "Comments"
+msgstr ""
+
+#: classwork.vinfcompanyname
+msgid "CompanyName"
+msgstr ""
+
+#: classwork.vinffiledescription
+msgid "FileDescription"
+msgstr ""
+
+#: classwork.vinffileversion
+msgid "FileVersion"
+msgstr ""
+
+#: classwork.vinfinternalname
+msgid "InternalName"
+msgstr ""
+
+#: classwork.vinflegalcopyright
+msgid "LegalCopyright"
+msgstr ""
+
+#: classwork.vinflegaltrademarks
+msgid "LegalTrademarks"
+msgstr ""
+
+#: classwork.vinforiginalfilename
+msgid "OriginalFileName"
+msgstr ""
+
+#: classwork.vinfprivatebuild
+msgid "PrivateBuild"
+msgstr ""
+
+#: classwork.vinfproductname
+msgid "ProductName"
+msgstr ""
+
+#: classwork.vinfproductversion
+msgid "ProductVersion"
+msgstr ""
+
+#: classwork.vinfspecialbuild
+msgid "SpecialBuild"
+msgstr ""
+
+#: commandline.clchacceptedvaluesdescription
+msgctxt "commandline.clchacceptedvaluesdescription"
+msgid "  Accepted values are any one of: %s."
+msgstr ""
+
+#: commandline.clcherrorvalueexpected
+msgctxt "commandline.clcherrorvalueexpected"
+msgid "the option \"%s\" expects one of the following values: %s"
+msgstr ""
+
+#: commandline.clfracceptedvaluesdescription
+msgctxt "commandline.clfracceptedvaluesdescription"
+msgid "  Accepted values fall between %f and %f, inclusive."
+msgstr ""
+
+#: commandline.clfrdefaultvaluedescription
+msgctxt "commandline.clfrdefaultvaluedescription"
+msgid "<number>"
+msgstr ""
+
+#: commandline.clfrerrorvalueexpected
+msgctxt "commandline.clfrerrorvalueexpected"
+msgid "the option \"%s\" expects a value between %f and %f"
+msgstr ""
+
+#: commandline.cliracceptedvaluesdescription
+msgctxt "commandline.cliracceptedvaluesdescription"
+msgid "  Accepted values fall between %d and %d, inclusive."
+msgstr ""
+
+#: commandline.clirdefaultvaluedescription
+msgctxt "commandline.clirdefaultvaluedescription"
+msgid "<integer>"
+msgstr ""
+
+#: commandline.clirerrorvalueexpected
+msgctxt "commandline.clirerrorvalueexpected"
+msgid "the option \"%s\" expects a value between %d and %d"
+msgstr ""
+
+#: commandline.clnmdefaultvaluedescription
+msgctxt "commandline.clnmdefaultvaluedescription"
+msgid "<number>"
+msgstr ""
+
+#: commandline.clodprintheaderrepresentation
+msgctxt "commandline.clodprintheaderrepresentation"
+msgid "Options:"
+msgstr ""
+
+#: commandline.clopabbreviationsrepresentation
+msgctxt "commandline.clopabbreviationsrepresentation"
+msgid "%s%s%s"
+msgstr ""
+
+#: commandline.clopassignmentoperator
+msgctxt "commandline.clopassignmentoperator"
+msgid "="
+msgstr ""
+
+#: commandline.clopassignmentrepresentation
+msgctxt "commandline.clopassignmentrepresentation"
+msgid "%s%s%s%s"
+msgstr ""
+
+#: commandline.clopdefaultvaluedescription
+msgctxt "commandline.clopdefaultvaluedescription"
+msgid "<value>"
+msgstr ""
+
+#: commandline.clopdefaultvaluerepresentation
+msgctxt "commandline.clopdefaultvaluerepresentation"
+msgid "(Defaults to: %s.)"
+msgstr ""
+
+#: commandline.cloperrorvalueexpected
+msgctxt "commandline.cloperrorvalueexpected"
+msgid "the option \"%s\" expects %s"
+msgstr ""
+
+#: commandline.clopparameterabbreviationdelimiter
+msgctxt "commandline.clopparameterabbreviationdelimiter"
+msgid "-"
+msgstr ""
+
+#: commandline.clopparameternamedelimiter
+msgctxt "commandline.clopparameternamedelimiter"
+msgid "--"
+msgstr ""
+
+#: commandline.clopstringrepresentation
+msgctxt "commandline.clopstringrepresentation"
+msgid "%s%s%s"
+msgstr ""
+
+#: commandline.clstdefaultvaluedescription
+msgctxt "commandline.clstdefaultvaluedescription"
+msgid "<string>"
+msgstr ""
+
+#: commandline.clswdefaultvaluedescription
+msgctxt "commandline.clswdefaultvaluedescription"
+msgid "<true|false>"
+msgstr ""
+
+#: commandline.lcbxerrorbooleanexpressionexpected
+msgctxt "commandline.lcbxerrorbooleanexpressionexpected"
+msgid "expected boolean expression after %s; got %s instead"
+msgstr ""
+
+#: commandline.lccsdigit
+msgctxt "commandline.lccsdigit"
+msgid ".$"
+msgstr ""
+
+#: commandline.lccsspecial
+msgctxt "commandline.lccsspecial"
+msgid "+-*/!-/='\""
+msgstr ""
+
+#: commandline.lccxerrorinvalidoperation
+msgctxt "commandline.lccxerrorinvalidoperation"
+msgid "cannot operate on incompatible values: %s and %s"
+msgstr ""
+
+#: commandline.lcdlbeginshortoption2string
+msgctxt "commandline.lcdlbeginshortoption2string"
+msgid "/"
+msgstr ""
+
+#: commandline.lcdlleftparenstring
+msgctxt "commandline.lcdlleftparenstring"
+msgid "("
+msgstr ""
+
+#: commandline.lcdlquote1string
+msgctxt "commandline.lcdlquote1string"
+msgid "\""
+msgstr ""
+
+#: commandline.lcdlquote2string
+msgctxt "commandline.lcdlquote2string"
+msgid "'"
+msgstr ""
+
+#: commandline.lcdlrightparenstring
+msgctxt "commandline.lcdlrightparenstring"
+msgid ")"
+msgstr ""
+
+#: commandline.lckwfalsestring
+msgctxt "commandline.lckwfalsestring"
+msgid "false"
+msgstr ""
+
+#: commandline.lckwnofullstring
+msgctxt "commandline.lckwnofullstring"
+msgid "no"
+msgstr ""
+
+#: commandline.lckwnoshortstring
+msgctxt "commandline.lckwnoshortstring"
+msgid "n"
+msgstr ""
+
+#: commandline.lckwoffstring
+msgctxt "commandline.lckwoffstring"
+msgid "off"
+msgstr ""
+
+#: commandline.lckwonstring
+msgctxt "commandline.lckwonstring"
+msgid "on"
+msgstr ""
+
+#: commandline.lckwtruestring
+msgctxt "commandline.lckwtruestring"
+msgid "true"
+msgstr ""
+
+#: commandline.lckwyesfullstring
+msgctxt "commandline.lckwyesfullstring"
+msgid "yes"
+msgstr ""
+
+#: commandline.lckwyesshortstring
+msgctxt "commandline.lckwyesshortstring"
+msgid "y"
+msgstr ""
+
+#: commandline.lcnxerrorinvalidnumber
+msgctxt "commandline.lcnxerrorinvalidnumber"
+msgid "invalid number: %s"
+msgstr ""
+
+#: commandline.lcopandstring
+msgctxt "commandline.lcopandstring"
+msgid "and"
+msgstr ""
+
+#: commandline.lcopdividestring
+msgctxt "commandline.lcopdividestring"
+msgid "/"
+msgstr ""
+
+#: commandline.lcopexponentstring
+msgctxt "commandline.lcopexponentstring"
+msgid "^"
+msgstr ""
+
+#: commandline.lcopminusstring
+msgctxt "commandline.lcopminusstring"
+msgid "-"
+msgstr ""
+
+#: commandline.lcopmodulostring
+msgctxt "commandline.lcopmodulostring"
+msgid "mod"
+msgstr ""
+
+#: commandline.lcopnotstring
+msgctxt "commandline.lcopnotstring"
+msgid "not"
+msgstr ""
+
+#: commandline.lcoporstring
+msgctxt "commandline.lcoporstring"
+msgid "or"
+msgstr ""
+
+#: commandline.lcopplusstring
+msgctxt "commandline.lcopplusstring"
+msgid "+"
+msgstr ""
+
+#: commandline.lcopshlstring
+msgctxt "commandline.lcopshlstring"
+msgid "shl"
+msgstr ""
+
+#: commandline.lcopshrstring
+msgctxt "commandline.lcopshrstring"
+msgid "shr"
+msgstr ""
+
+#: commandline.lcoptimesstring
+msgctxt "commandline.lcoptimesstring"
+msgid "*"
+msgstr ""
+
+#: commandline.lcstwarningunknownoption
+msgctxt "commandline.lcstwarningunknownoption"
+msgid "ignoring unknown option %s"
+msgstr ""
+
+#: commandline.lcxperrorvalidexpressionexpected
+msgctxt "commandline.lcxperrorvalidexpressionexpected"
+msgid "expected valid expression after %s; got %s instead"
+msgstr ""
+
+#: linearc.clchacceptedvaluesdescription
+msgctxt "linearc.clchacceptedvaluesdescription"
+msgid "  Accepted values are any one of: %s."
+msgstr ""
+
+#: linearc.clcherrorvalueexpected
+msgctxt "linearc.clcherrorvalueexpected"
+msgid "the option \"%s\" expects one of the following values: %s"
+msgstr ""
+
+#: linearc.clfracceptedvaluesdescription
+msgctxt "linearc.clfracceptedvaluesdescription"
+msgid "  Accepted values fall between %f and %f, inclusive."
+msgstr ""
+
+#: linearc.clfrdefaultvaluedescription
+msgctxt "linearc.clfrdefaultvaluedescription"
+msgid "<number>"
+msgstr ""
+
+#: linearc.clfrerrorvalueexpected
+msgctxt "linearc.clfrerrorvalueexpected"
+msgid "the option \"%s\" expects a value between %f and %f"
+msgstr ""
+
+#: linearc.cliracceptedvaluesdescription
+msgctxt "linearc.cliracceptedvaluesdescription"
+msgid "  Accepted values fall between %d and %d, inclusive."
+msgstr ""
+
+#: linearc.clirdefaultvaluedescription
+msgctxt "linearc.clirdefaultvaluedescription"
+msgid "<integer>"
+msgstr ""
+
+#: linearc.clirerrorvalueexpected
+msgctxt "linearc.clirerrorvalueexpected"
+msgid "the option \"%s\" expects a value between %d and %d"
+msgstr ""
+
+#: linearc.clnmdefaultvaluedescription
+msgctxt "linearc.clnmdefaultvaluedescription"
+msgid "<number>"
+msgstr ""
+
+#: linearc.clodprintheaderrepresentation
+msgctxt "linearc.clodprintheaderrepresentation"
+msgid "Options:"
+msgstr ""
+
+#: linearc.clopabbreviationsrepresentation
+msgctxt "linearc.clopabbreviationsrepresentation"
+msgid "%s%s%s"
+msgstr ""
+
+#: linearc.clopassignmentoperator
+msgctxt "linearc.clopassignmentoperator"
+msgid "="
+msgstr ""
+
+#: linearc.clopassignmentrepresentation
+msgctxt "linearc.clopassignmentrepresentation"
+msgid "%s%s%s%s"
+msgstr ""
+
+#: linearc.clopdefaultvaluedescription
+msgctxt "linearc.clopdefaultvaluedescription"
+msgid "<value>"
+msgstr ""
+
+#: linearc.clopdefaultvaluerepresentation
+msgctxt "linearc.clopdefaultvaluerepresentation"
+msgid "(Defaults to: %s.)"
+msgstr ""
+
+#: linearc.cloperrorvalueexpected
+msgctxt "linearc.cloperrorvalueexpected"
+msgid "the option \"%s\" expects %s"
+msgstr ""
+
+#: linearc.clopflagrepresentation
+msgid "%s%s"
+msgstr ""
+
+#: linearc.clopparameterabbreviationdelimiter
+msgctxt "linearc.clopparameterabbreviationdelimiter"
+msgid "-"
+msgstr ""
+
+#: linearc.clopparameternamedelimiter
+msgctxt "linearc.clopparameternamedelimiter"
+msgid "--"
+msgstr ""
+
+#: linearc.clopstringrepresentation
+msgctxt "linearc.clopstringrepresentation"
+msgid "%s%s%s"
+msgstr ""
+
+#: linearc.clstdefaultvaluedescription
+msgctxt "linearc.clstdefaultvaluedescription"
+msgid "<string>"
+msgstr ""
+
+#: linearc.clswdefaultvaluedescription
+msgctxt "linearc.clswdefaultvaluedescription"
+msgid "<true|false>"
+msgstr ""
+
+#: linearc.lcappusagestringformat
+msgid "Usage: %s [options]"
+msgstr ""
+
+#: linearc.lcappversionstringformat
+msgid "%s %s"
+msgstr ""
+
+#: linearc.lcbxerrorbooleanexpressionexpected
+msgctxt "linearc.lcbxerrorbooleanexpressionexpected"
+msgid "expected boolean expression after %s; got %s instead"
+msgstr ""
+
+#: linearc.lccsdigit
+msgctxt "linearc.lccsdigit"
+msgid ".$"
+msgstr ""
+
+#: linearc.lccsletter
+msgctxt "linearc.lccsletter"
+msgid "?"
+msgstr ""
+
+#: linearc.lccsspecial
+msgctxt "linearc.lccsspecial"
+msgid "+-*/!='\""
+msgstr ""
+
+#: linearc.lccxerrorinvalidoperation
+msgctxt "linearc.lccxerrorinvalidoperation"
+msgid "cannot operate on incompatible values: %s and %s"
+msgstr ""
+
+#: linearc.lcdlbeginshortoption2string
+msgctxt "linearc.lcdlbeginshortoption2string"
+msgid "/"
+msgstr ""
+
+#: linearc.lcdlleftparenstring
+msgctxt "linearc.lcdlleftparenstring"
+msgid "("
+msgstr ""
+
+#: linearc.lcdlquote1string
+msgctxt "linearc.lcdlquote1string"
+msgid "\""
+msgstr ""
+
+#: linearc.lcdlquote2string
+msgctxt "linearc.lcdlquote2string"
+msgid "'"
+msgstr ""
+
+#: linearc.lcdlrightparenstring
+msgctxt "linearc.lcdlrightparenstring"
+msgid ")"
+msgstr ""
+
+#: linearc.lckwfalsestring
+msgctxt "linearc.lckwfalsestring"
+msgid "false"
+msgstr ""
+
+#: linearc.lckwhelpdescription
+msgid "Display this usage information"
+msgstr ""
+
+#: linearc.lckwhelplongstring
+msgid "help"
+msgstr ""
+
+#: linearc.lckwhelpshortstring
+msgctxt "linearc.lckwhelpshortstring"
+msgid "?"
+msgstr ""
+
+#: linearc.lckwnofullstring
+msgctxt "linearc.lckwnofullstring"
+msgid "no"
+msgstr ""
+
+#: linearc.lckwnoshortstring
+msgctxt "linearc.lckwnoshortstring"
+msgid "n"
+msgstr ""
+
+#: linearc.lckwoffstring
+msgctxt "linearc.lckwoffstring"
+msgid "off"
+msgstr ""
+
+#: linearc.lckwonstring
+msgctxt "linearc.lckwonstring"
+msgid "on"
+msgstr ""
+
+#: linearc.lckwtruestring
+msgctxt "linearc.lckwtruestring"
+msgid "true"
+msgstr ""
+
+#: linearc.lckwversiondescription
+msgid "Display program version information"
+msgstr ""
+
+#: linearc.lckwversionlongstring
+msgid "version"
+msgstr ""
+
+#: linearc.lckwyesfullstring
+msgctxt "linearc.lckwyesfullstring"
+msgid "yes"
+msgstr ""
+
+#: linearc.lckwyesshortstring
+msgctxt "linearc.lckwyesshortstring"
+msgid "y"
+msgstr ""
+
+#: linearc.lcnxerrorinvalidnumber
+msgctxt "linearc.lcnxerrorinvalidnumber"
+msgid "invalid number: %s"
+msgstr ""
+
+#: linearc.lcopandstring
+msgctxt "linearc.lcopandstring"
+msgid "and"
+msgstr ""
+
+#: linearc.lcopdividestring
+msgctxt "linearc.lcopdividestring"
+msgid "/"
+msgstr ""
+
+#: linearc.lcopexponentstring
+msgctxt "linearc.lcopexponentstring"
+msgid "^"
+msgstr ""
+
+#: linearc.lcopminusstring
+msgctxt "linearc.lcopminusstring"
+msgid "-"
+msgstr ""
+
+#: linearc.lcopmodulostring
+msgctxt "linearc.lcopmodulostring"
+msgid "mod"
+msgstr ""
+
+#: linearc.lcopnotstring
+msgctxt "linearc.lcopnotstring"
+msgid "not"
+msgstr ""
+
+#: linearc.lcoporstring
+msgctxt "linearc.lcoporstring"
+msgid "or"
+msgstr ""
+
+#: linearc.lcopplusstring
+msgctxt "linearc.lcopplusstring"
+msgid "+"
+msgstr ""
+
+#: linearc.lcopshlstring
+msgctxt "linearc.lcopshlstring"
+msgid "shl"
+msgstr ""
+
+#: linearc.lcopshrstring
+msgctxt "linearc.lcopshrstring"
+msgid "shr"
+msgstr ""
+
+#: linearc.lcoptimesstring
+msgctxt "linearc.lcoptimesstring"
+msgid "*"
+msgstr ""
+
+#: linearc.lcstwarningunknownoption
+msgctxt "linearc.lcstwarningunknownoption"
+msgid "ignoring unknown option %s"
+msgstr ""
+
+#: linearc.lcxperrorvalidexpressionexpected
+msgctxt "linearc.lcxperrorvalidexpressionexpected"
+msgid "expected valid expression after %s; got %s instead"
+msgstr ""
+
 #: parsing.letkstringrepresentation
 msgid "end of line (%d)"
 msgstr ""
@@ -348,6 +964,38 @@ msgstr ""
 
 #: parsing.parssyntaxunexpectedtoken
 msgid "unexpected %s in source"
+msgstr ""
+
+#: parsing.plcstypicaldigit
+msgctxt "parsing.plcstypicaldigit"
+msgid "0123456789"
+msgstr ""
+
+#: parsing.plcstypicalendofline
+msgid ""
+"\n"
+"\n"
+msgstr ""
+
+#: parsing.plcstypicalendofstream
+msgid "#26"
+msgstr ""
+
+#: parsing.plcstypicalletter
+msgid "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz_"
+msgstr ""
+
+#: parsing.plcstypicalnumeric
+msgid "xXeE"
+msgstr ""
+
+#: parsing.plcstypicalwhitespace
+msgid "#0#1#2#3#4#5#6#7#8#9#11#12#14#15#16#17#18#19#20#21#22#23#24#25#27#28#29#30#31#127"
+msgstr ""
+
+#: parsing.plcstypicalword
+msgctxt "parsing.plcstypicalword"
+msgid "0123456789"
 msgstr ""
 
 #: parsing.pmsgstringrepresentation

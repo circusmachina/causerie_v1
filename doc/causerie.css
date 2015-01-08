@@ -5,9 +5,9 @@ body, html, table.container {
 
 body {
   font-family: sans-serif;
+  font-size: 10pt;
   color: black;
-  background-color: white;
-  font-size: 10px;
+  background: white;
 }
 
 table.container {
@@ -19,24 +19,25 @@ table.container td {
 }
 
 td.navigation {
+  background: #c03030 url(causerie_82.png) top right no-repeat;
   width: 200px;
-  color: white;
-  background-color: #787878;
+  color: #c03030;
   margin: 0;
   /* padding-bottom is a little larger, to make navigation column have some
      nice height even when td.content column is very small. */
-  padding: 1em 1em 100px 1em;
+  padding: 90px 1em 100px 1em; 
+  border-bottom-right-radius: 3px;
 }
 td.navigation p { padding: 0; }
-td.navigation h2 { margin-top: 0; }
+td.navigation h2 { margin-top: 0; display: none;}
 
 td.content { padding: 1em; }
 td.content h1 { margin-top: 0; }
 
 img { border:0px; }
 
-a:link {color:#0C1EC9; text-decoration: none; }
-a:visited {color:#315C7E; text-decoration: none; }
+a:link {color:#C91E0C; text-decoration: none; }
+a:visited {color:#7E5C31; text-decoration: none; }
 a:hover {text-decoration: underline; }
 a:active {text-decoration: underline; }
 
@@ -45,13 +46,13 @@ a.navigation:visited { color: white; text-decoration: none; }
 a.navigation:hover { color: white; font-weight: bold; text-decoration: none; }
 a.navigation:active { color: white; text-decoration: none; }
 
-a.bold:link {color:#0C1EC9; text-decoration: none; font-weight:bold; }
-a.bold:visited {color:#315C7E; text-decoration: none; font-weight:bold; }
+a.bold:link {color:#C91E0C; text-decoration: none; font-weight:bold; }
+a.bold:visited {color:#c03030; text-decoration: none; font-weight:bold; }
 a.bold:hover {text-decoration: underline; font-weight:bold; }
 a.bold:active {text-decoration: underline; font-weight:bold; }
 
-a.section {color: green; text-decoration: none; font-weight: bold; }
-a.section:hover {color: green; text-decoration: underline; font-weight: bold; }
+a.section {color: #c03030; text-decoration: none; font-weight: bold; }
+a.section:hover {color: #c91e0c; text-decoration: underline; font-weight: bold; }
 
 ul.useslist a:link {color:#C91E0C; text-decoration: none; font-weight:bold; }
 ul.useslist a:visited {color:#7E5C31; text-decoration: none; font-weight:bold; }
@@ -62,13 +63,13 @@ ul.hierarchy { list-style-type:none; }
 ul.hierarchylevel { list-style-type:none; }
 
 p.unitlink a:link {color:#C91E0C; text-decoration: none; font-weight:bold; }
-p.unitlink a:visited {color:#7E5C31; text-decoration: none; font-weight:bold; }
+p.unitlink a:visited {color:#7E3C31; text-decoration: none; font-weight:bold; }
 p.unitlink a:hover {text-decoration: underline; font-weight:bold; }
 p.unitlink a:active {text-decoration: underline; font-weight:bold; }
 
-tr.list { background: #44BFFF; }
-tr.list2 { background: #82C9FF; }
-tr.listheader { background: #0C1EC9; color: white; }
+tr.list { background: #CFC2C2; }
+tr.list2 { background: #BFC2C2; }
+tr.listheader { background: #C91E0C; color: white; }
 
 table.wide_list { border-spacing:2px; width:100%; }
 table.wide_list td { vertical-align:top; padding:4px; }
@@ -77,7 +78,7 @@ table.markerlegend { width:auto; }
 table.markerlegend td.legendmarker { text-align:center; }
 
 table.sections { background:white; }
-table.sections td {background:lightgray; }
+table.sections td {background:#cfc2c2; }
 
 table.summary td.itemcode { width:100%; }
 table.detail td.itemcode { width:100%; }

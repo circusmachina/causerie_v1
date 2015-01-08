@@ -96,9 +96,10 @@ type AStringLeaf = class(ABinaryLeaf)
     { Construct and return a string representation of the node, suitable for
       printing to a text-based console or device.
 
-      The implementation of this method for @link(AStringLeaf) returns
-      the class name of the node and the value of its name and index.  The
-      format of the string returned is controlled by
+      In accordance with the criteria described by
+      @link(APrintingObject.toString), this method returns a string which
+      contains the index of the node and the string used to define its sort
+      key.  The format of the string returned is controlled by
       @link(stlfStringRepresentation).
     }
     function toString: AnsiString; override;
@@ -127,13 +128,11 @@ end;
   { This string controls the way a representation of @link(AStringLeaf) is
     constructed by @link(AStringLeaf.toString).
 
-    The first string placeholder will be filled with the display name of the
-    class, as returned by a call to @link(APrintingObject.displayName).  The
-    integer placeholder will be filled by the index of the node, and the
-    second string placeholder will be filled with the name of the node, as
-    returned by a call to @link(AStringLeaf.name).
+    The integer placeholder will be filled by the index of the node, and the
+    string placeholder will be filled with the name of the node, as returned by
+    a call to @link(AStringLeaf.name).
   }
-  stlfStringRepresentation = '%s at index %d named "%s"';
+  stlfStringRepresentation = '[%d]: "%s"';
 {$ENDIF}
 {$IFDEF ReadImplementation}
 // AStringLeaf *****************************************************************
@@ -229,7 +228,7 @@ function AStringLeaf.toString: string;
 
 begin
   result := SysUtils.format(stlfStringRepresentation, [
-    Self.displayName, myIndex, myName
+    myIndex, myName
   ]);
 end;
 

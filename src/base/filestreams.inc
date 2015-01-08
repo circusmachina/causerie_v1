@@ -121,7 +121,7 @@ type AFileStream = class(AStream, CanPrint)
 
       @return(The total number of bytes written to @code(Dest).)
     }
-    function printTo(const Dest: AStream;
+    function printTo(const Dest: ATextOutputStream;
       prefix: AnsiString = '';
       suffix: AnsiString = ''): TStreamIOSize; virtual;
 
@@ -509,7 +509,7 @@ end;
    \return The total number of bytes written to \p Dest.  This value will be
    zero (0) if \p Dest is #nil.
 *}
-function AFileStream.printTo(const Dest: AStream;
+function AFileStream.printTo(const Dest: ATextOutputStream;
   prefix: AnsiString = '';
   suffix: AnsiString = ''): TStreamIOSize;
 

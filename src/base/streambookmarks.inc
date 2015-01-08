@@ -16,6 +16,39 @@
   with this program.  If not, see <http://www.gnu.org/licenses/>.
 }
 {$IFDEF ReadInterface}
+{ This type is defined for convenience and portability; it represents a code
+  that indicates the type of a bookmark stored in a stream.  The value assigned
+  to an instance of this type is used to ensure the correct instance of
+  @link(AStreamBookmark) or one of its descendants is constructed to manage the
+  bookmark when it is read from the stream.
+}
+type TStreamBookmarkType = longword;
+
+const
+  { This constant represents a type of stream bookmark and can be assigned to
+    @link(AStreamBookmark.bookmarkType) by the initializer of an instance of
+    @link(AStreamBookmark) or one of its descendants.  The value of this
+    constant is used to ensure that the correct instance of
+    @link(AStreamBookmark) or one of its descendants is constructed when
+    reading bookmarks from a stream.
+
+    The value of this constant indicates that the bookmark stored in the stream
+    is a direct instance of @link(AStreamBookmark).
+  }
+  SBTYPE_BOOKMARK = 1;
+
+  { This constant represents a type of stream bookmark and can be assigned to
+    @link(AStreamBookmark.bookmarkType) by the initializer of an instance of
+    @link(AStreamBookmark) or one of its descendants.  The value of this
+    constant is used to ensure that the correct instance of
+    @link(AStreamBookmark) or one of its descendants is constructed when
+    reading bookmarks from a stream.
+
+    The value of this constant indicates that the bookmark stored in the stream
+    is a direct instance of @link(AStreamBookmarkSpan).
+  }
+  SBTYPE_SPAN = 2;
+
 // AStreamBookmark *************************************************************
 { This class represents a stream bookmark, which is a way of associating a
   name with a specific location in a stream.  This is useful in cases where
@@ -29,6 +62,9 @@
 }
 type AStreamBookmark = class(AStringLeaf)
   protected
+    { Indicates the type of bookmark represented }
+    myBookmarkType: TStreamBookmarkType;
+
     { Stores the position in the stream where the data referenced by the
       bookmark may be found.
     }
@@ -56,7 +92,8 @@ type AStreamBookmark = class(AStringLeaf)
 
       This method builds upon the behavior inherited from
       @link(AStringLeaf.selfStreamingLength): it calls the inherited routine,
-      then adds the number of bytes required to store the position reference.
+      then adds the number of bytes required to store the bookmark type and
+      position reference.
     }
     function selfStreamingLength: TStreamIOSize; override;
 
@@ -94,10 +131,22 @@ type AStreamBookmark = class(AStringLeaf)
     function toString: AnsiString; override;
 
     // Properties --------------------------------------------------------------
+    { Retrieve the type of bookmark represented by the instance.
+
+      This value is used when reading bookmarks from a stream to ensure the
+      correct instance of @link(AStreamBookmark) or its descendants is created.
+    }
+    function bookmarkType: TStreamBookmarkType; virtual;
+
     { Retrieve the position in the stream to which the bookmark refers. }
     function position: TStreamOffset; virtual;
 
     { Set the position in the stream to which the bookmark refers.
+
+      @code(thisPosition) must be a positive value which specifies the offset,
+      in bytes, from the beginning of the stream to which the bookmark refers.
+      The beginning of the stream is always at offset zero (@code(0)).  If
+      @code(thisPosition) is negative, this routine will do nothing.
 
       @return(The previous value of @link(AStreamBookmark.position).)
     }
@@ -116,6 +165,112 @@ type AStreamBookmark = class(AStringLeaf)
       virtual;
 end;
 
+// AStreamBookmarkSpan *********************************************************
+{ This class represents a string bookmark that specifies a span: that is, a
+  block of bytes within a stream.  The bookmark tracks not only the position
+  of the span, where it begins, but also its size in bytes.
+
+  To mark the beginning of a span, simply call
+  @link(AStreamBookmark.setPosition AStreamBookmarkSpan.setPosition).
+  To mark the end of a span, call
+  @link(AStreamBookmarkSpan.markEndPosition) and the bookmark will automatically
+  calculate the size of the span.
+}
+type AStreamBookmarkSpan = class(AStreamBookmark)
+  protected
+    { Stores the size of the span, in bytes }
+    myLength: TStreamLength;
+
+  public
+    // Initializer
+    function init: boolean; override;
+
+    { Calculate the number of bytes required to stream the bookmark.
+
+      This method builds upon the behavior inherited from
+      @link(AStreamBookmark.selfStreamingLength): it calls the inherited
+      routine, then adds the number of bytes required to store the length of the
+      span.
+    }
+    function selfStreamingLength: TStreamIOSize; override;
+
+    { Write the bookmark, and just the bookmark, to the given stream.
+
+      This method builds upon the behavior inherited from
+      @link(AStreamBookmark.writeSelfTo); it first calls the inherited routine,
+      then writes the value of @link(AStreamBookmarkSpan.length).
+
+      @return(The total number of bytes written to @code(Dest).)
+    }
+    function writeSelfTo(const Dest: AStream): TStreamIOSize; override;
+
+    // CanStream implementation ------------------------------------------------
+    { Read the bookmark from the given stream.
+
+      This method builds upon the behavior inherited from
+      @link(AStreamBookmark.readFrom); it first calls the inherited routine,
+      then reads the value of @link(AStreamBookmarkSpan.length).
+
+      @return(The total number of bytes read from @code(Source).)
+    }
+    function readFrom(const Source: AStream): TStreamIOSize; override;
+
+    // CanPrint implementation -------------------------------------------------
+    { Construct a string representation of the bookmark, suitable for output to
+      a text-based device, such as a console.
+
+      This method overrides the behavior inherited from
+      @link(AStreamBookmark.toString).  It returns a string that is constructed
+      based on the format specified by either
+      @link(sbspStringRepresentationPlural) or
+      @link(sbspStringRepresentationSingular), depending on the value of
+      @link(AStreamBookmarkSpan.length Self.length).  In the default
+      implementation of this method, this string will contain the name of the
+      span as well as the positions in the stream where it begins and ends, and
+      its length.
+    }
+    function toString: AnsiString; override;
+
+    // Properties --------------------------------------------------------------
+    { Retrieve the size of the span, in bytes. }
+    function length: TStreamLength; virtual;
+
+    { Retrieve the position in the stream at which the span comes to an end.
+
+      This method calculates the value returned by adding the value of
+      @link(AStreamBookmark.position Self.position) to the value of
+      @link(AStreamBookmarkSpan.length Self.length).
+    }
+    function endPosition: TStreamOffset; virtual;
+
+    { Set the position in the stream at which the span comes to an end.
+
+      @code(thisPosition) must be a positive value which specifies the offset,
+      in bytes, from the beginning of the stream where the span comes to an end.
+      The beginning of the stream is always at offset zero (@code(0)).  If
+      @code(thisPosition) is negative, this routine will do nothing.
+
+      If @code(thisPosition) represents a position in the stream that is less
+      than the value of @link(AStreamBookmark.position Self.position), this
+      method will do nothing.
+
+      @return(The previous value of @link(AStreamBookmarkSpan.endPosition).)
+    }
+    function setEndPosition(const thisPosition: TStreamOffset): TStreamOffset;
+      virtual;
+
+    { Use the current position in the specified stream as the point at which the
+      span comes to an end.
+
+      If @code(Source) is valid (not @nil), then this method calls
+      @link(AStream.position) on it and stores the result.
+
+      @return(The previous value of @link(AStreamBookmarkSpan.endPosition).)
+    }
+    function setEndToCurrentPositionIn(const Source: AStream): TStreamOffset;
+      virtual;
+end;
+
 // AStreamBookmarkDictionary ***************************************************
 { This class represents a dictionary of stream bookmarks, which is a collection
   of instances of @link(AStreamBookmark).  It provides a way to retrieve the
@@ -130,13 +285,7 @@ type AStreamBookmarkDictionary = class(AStringTree)
     { Retrieve the position to which the named bookmark refers.
 
       If @code(thisBookmarkName) is invalid (an empty string), or the named
-      bookmark is not found, this method will return a very large negative
-      number (@link(STREAM_OFFSET_MIN)).  This is because stream bookmarks can
-      refer to positions relative to the end of the stream (-1 or lower) OR to
-      positions relative to the beginning of the stream (0 or greater).  It is
-      unlikely that a stream bookmark will refer to a position relative to the
-      end of the stream which is as large as the value returned by this method
-      in the event of an error, however.
+      bookmark is not found, this method will return a negative value.
     }
     function positionOf(const thisBookmarkName: string): TStreamOffset; virtual;
 
@@ -150,18 +299,43 @@ type AStreamBookmarkDictionary = class(AStringTree)
     }
     function BookmarkNamed(const thisBookmarkName: string): AStreamBookmark;
       virtual;
-end;
 
-const
-  { This constant represents the largest possible negative stream offset.
-    Negative stream offsets are used to refer to positions within instances of
-    @link(AStream) relative to the end of the stream; in such cases, the end of
-    the stream is always at position -1.  However, it is unlikely that a
-    negative offset as large as this one will ever be used, which is why
-    @link(AStreamBookmarkDictionary.positionOf) returns this value to indicate
-    an error has occurred.
-  }
-  STREAM_OFFSET_MIN: int64 = -9223372036854775808;
+    { This method is responsible for constructing the appropriate instance of
+      @link(AStreamBookmark) or one of its descendants to read the bookmark
+      data stored in the stream.  Descendant classes may override this method
+      to add to the types of bookmarks that are recognized; the base
+      implementation will construct instances of @link(AStreamBookmark) or
+      @link(AStreamBookmarkSpan).
+
+      @return(An instance of @link(AStreamBookmark) or one of its descendants,
+      depending on the value of @code(thisBookmarkType).  The caller is
+      responsible for ensuring that the instance returned is freed when it is no
+      longer needed.
+
+      If @code(thisBookmarkType) specifies a value that is not recognized by the
+      method, the method will return @nil.)
+    }
+    function NewBookmarkOfType(const thisBookmarkType: TStreamBookmarkType): AStreamBookmark;
+      virtual;
+
+    // CanStream implementation ------------------------------------------------
+    { Read the dictionary from the given stream.
+
+      This method overrides the behavior inherited from
+      @link(ABinaryTree).  After reading the number of entries in the
+      dictionary the method loops, reading the type of bookmark from the
+      stream and then calling
+      @link(AStreamBookmarkDictionary.NewBookmarkOfType).  Once the appropriate
+      instance has been constructed, the @link(ANode.readFrom readFrom) method
+      is called on it to ensure that the data is read. The bookmark instance
+      is then added to the dictionary.
+
+      @return(The total number of bytes read from the stream.  If
+      @code(Source) is @nil, this routine will do nothing and will return
+      zero (@code(0)).
+    }
+    function readFrom(const Source: AStream): TStreamIOSize; override;
+end;
 {$ENDIF}
 {$IFDEF ReadResourceStrings}
   { The format specified by this string is used to construct a string
@@ -169,12 +343,57 @@ const
     @link(AStreamBookmark.toString) is called.
 
     The string placeholder is replaced by the name of the bookmark, as
-    returned by a call to @link(AStringLeaf.name AStreamBookmark.name).  The
-    integer placeholder is replaced with the position in the stream to which
+    returned by a call to @link(AStringLeaf.name AStreamBookmark.name).
+
+    The integer placeholder is replaced with the position in the stream to which
     the bookmark refers, as returned by a call to
     @link(AStreamBookmark.position).
   }
   stbmStringRepresentation = '%s => %d';
+
+  { The format specified by this string is used to construct a string
+    representation of @link(AStreamBookmarkSpan) when
+    @link(AStreamBookmarkSpan.toString) is called.  This representation is used
+    when @link(AStreamBookmarkSpan.length) returns any value except 1.
+
+    The string placedholder is replaced by the name of the bookmark, as
+    returned by a call to @link(AStringLeaf.name AStreamBookmark.name).
+
+    The first integer placeholder is replaced with the position in the stream at
+    which the span begins, as returned by a call to
+    @link(AStreamBookmark.position AStreamBookmarkSpan.position).
+
+    The second integer placeholder is replaced with the position in the stream
+    at which the span ends, as returned by a call to
+    @link(AStreamBookmarkSpan.endPosition).
+
+    The third integer placeholder is replaced with the length of the span, in
+    bytes, as returned by a call to
+    @link(AStreamBookmarkSpan.length).
+  }
+  sbspStringRepresentationPlural = '%s => from %d to %d (%d bytes)';
+
+  { The format specified by this string is used to construct a string
+    representation of @link(AStreamBookmarkSpan) when
+    @link(AStreamBookmarkSpan.toString) is called.  This representation is used
+    when @link(AStreamBookmarkSpan.length) returns a value of 1.
+
+    The string placedholder is replaced by the name of the bookmark, as
+    returned by a call to @link(AStringLeaf.name AStreamBookmark.name).
+
+    The first integer placeholder is replaced with the position in the stream at
+    which the span begins, as returned by a call to
+    @link(AStreamBookmark.position AStreamBookmarkSpan.position).
+
+    The second integer placeholder is replaced with the position in the stream
+    at which the span ends, as returned by a call to
+    @link(AStreamBookmarkSpan.endPosition).
+
+    The third integer placeholder is replaced with the length of the span, in
+    bytes, as returned by a call to
+    @link(AStreamBookmarkSpan.length).
+  }
+  sbspStringRepresentationSingular = '%s => from %d to %d (%d byte)';
 {$ENDIF}
 {$IFDEF ReadImplementation}
 // AStreamBookmark *************************************************************
@@ -185,7 +404,7 @@ constructor AStreamBookmark.named(const thisKey: string;
 begin
   inherited named(thisKey);
 
-  myPosition := thisPosition;
+  Self.setPosition(thisPosition);
 end;
 
 // Constructor
@@ -196,7 +415,7 @@ begin
   inherited named(thisName);
 
   if Source <> nil then
-    myPosition := Source.position;
+    Self.setPosition(Source.position);
 end;
 
 // Initializer
@@ -207,7 +426,8 @@ begin
 
   if result then
   begin
-    myPosition := 0;
+    myBookmarkType := SBTYPE_BOOKMARK;
+    myPosition := -1;
   end;
 end;
 
@@ -219,7 +439,7 @@ begin
   result := inherited selfStreamingLength;
 
   // Add ourselves
-  inc(result, sizeof(myPosition));
+  inc(result, sizeof(myBookmarkType) + sizeof(myPosition));
 end;
 
 // Write the bookmark to the given stream
@@ -231,8 +451,11 @@ begin
   if Dest = nil then
     exit;
 
-  // Call the inherited routine first
-  result := inherited writeSelfTo(Dest);
+  // Write the bookmark type first
+  result := Dest.write(sizeof(myBookmarkType), myBookmarkType);
+
+  // Call the inherited routine
+  result := result + inherited writeSelfTo(Dest);
 
   // Write the position to which the bookmark refers
   result := result + Dest.write(sizeof(myPosition), myPosition);
@@ -248,8 +471,11 @@ begin
   if Source = nil then
     exit;
 
-  // Call the inherited routine first
-  result := inherited readFrom(Source);
+  // Read the bookmark type first
+  result := Source.read(sizeof(myBookmarkType), myBookmarkType);
+
+  // Call the inherited routine
+  result := result + inherited readFrom(Source);
 
   // Read the position to which the bookmark refers
   result := result + Source.read(sizeof(myPosition), myPosition);
@@ -261,11 +487,18 @@ function AStreamBookmark.toString: AnsiString;
 
 begin
   result := SysUtils.format(stbmStringRepresentation, [
-    Self.name, myPosition
+    Self.name, Self.position
   ]);
 end;
 
 // Properties ------------------------------------------------------------------
+// Retrieve the bookmark type
+function AStreamBookmark.bookmarkType: TStreamBookmarkType;
+
+begin
+  result := myBookmarkType;
+end;
+
 // Retrieve the position to which the bookmark refers
 function AStreamBookmark.position: TStreamOffset;
 
@@ -291,7 +524,115 @@ begin
   result := myPosition;
 
   if Source <> nil then
-    myPosition := Source.position;
+    Self.setPosition(Source.position);
+end;
+
+// AStreamBookmarkSpan *********************************************************
+// Initializer
+function AStreamBookmarkSpan.init: boolean;
+
+begin
+  result := inherited init;
+
+  if result then
+  begin
+    myBookmarkType := SBTYPE_SPAN;
+    myLength := 0;
+  end;
+end;
+
+// Calculate the number of bytes required to stream the bookmark
+function AStreamBookmarkSpan.selfStreamingLength: TStreamIOSize;
+
+begin
+  result := inherited selfStreamingLength + sizeof(myLength);
+end;
+
+// Write the bookmark to the given stream
+function AStreamBookmarkSpan.writeSelfTo(const Dest: AStream): TStreamIOSize;
+
+begin
+  result := 0;
+
+  if Dest <> nil then
+  begin
+    // Call the inherited routine first
+    result := inherited writeSelfTo(Dest);
+    // Write our length
+    result := result + Dest.write(sizeof(myLength), myLength);
+  end;
+end;
+
+// CanStream implementation ----------------------------------------------------
+// Read the bookmark from the given stream
+function AStreamBookmarkSpan.readFrom(const Source: AStream): TStreamIOSize;
+
+begin
+  result := 0;
+
+  if Source <> nil then
+  begin
+    // Call the inherited routine first
+    result := inherited readFrom(Source);
+    // Read our length
+    result := result + Source.read(sizeof(myLength), myLength);
+  end;
+end;
+
+// CanPrint implementation -----------------------------------------------------
+// Construct a string representation of the bookmark
+function AStreamBookmarkSpan.toString: AnsiString;
+
+begin
+  if Self.length <> 1 then
+    result := SysUtils.format(sbspStringRepresentationPlural, [
+      Self.name, Self.position, Self.endPosition, Self.length
+    ])
+
+  else
+    result := SysUtils.format(sbspStringRepresentationSingular, [
+      Self.name, Self.position, Self.endPosition, Self.length
+    ]);
+end;
+
+// Properties ------------------------------------------------------------------
+// Retrieve the size of the span, in bytes
+function AStreamBookmarkSpan.length: TStreamLength;
+
+begin
+  result := myLength;
+end;
+
+// Retrieve the position at which the span ends
+function AStreamBookmarkSpan.endPosition: TStreamOffset;
+
+begin
+  result := Self.position + Self.length;
+end;
+
+// Mark the position at which the span ends
+function AStreamBookmarkSpan.setEndPosition(const thisPosition: TStreamOffset): TStreamOffset;
+
+begin
+  // Return the previous end position
+  result := Self.endPosition;
+
+  if (thisPosition < 0) or (thisPosition < Self.position) then
+    exit;
+
+  // Calculate the length of the span
+  myLength := thisPosition - Self.position;
+end;
+
+// Mark the position at which the span ends
+function AStreamBookmarkSpan.setEndToCurrentPositionIn(const Source: AStream): TStreamOffset;
+
+begin
+  // Return the previous end position
+  result := Self.endPosition;
+
+  if (Source <> nil) and (Source.position > Self.position) then
+    Self.setEndPosition(Source.position);
 end;
 
 // AStreamBookmarkDictionary ***************************************************
@@ -316,7 +657,7 @@ var
   ThisBookmark: AStreamBookmark;
 
 begin
-  result := STREAM_OFFSET_MIN;
+  result := -1;
 
   if thisBookmarkName = '' then
     exit;
@@ -332,6 +673,75 @@ function AStreamBookmarkDictionary.BookmarkNamed(const thisBookmarkName: string)
 
 begin
   Result := AStreamBookmark(Self.FetchLeaf(thisBookmarkName));
+end;
+
+// Read a bookmark of the given type from the given stream
+function AStreamBookmarkDictionary.NewBookmarkOfType(const thisBookmarkType: TStreamBookmarkType): AStreamBookmark;
+
+begin
+  Result := nil;
+
+  if thisBookmarkType = 0 then
+    exit;
+
+  case thisBookmarkType of
+    SBTYPE_BOOKMARK:
+      Result := AStreamBookmark.new;
+
+    SBTYPE_SPAN:
+      Result := AStreamBookmarkSpan.new;
+  end;
+end;
+
+// CanStream implementation ----------------------------------------------------
+// Read the bookmarks from the given stream
+function AStreamBookmarkDictionary.readFrom(const Source: AStream): TStreamIOSize;
+
+var
+  // Stores the number of entries in the binary tree
+  entryCount: longword;
+  // Stores the type of bookmark stored in the stream
+  thisBookmarkType: TStreamBookmarkType;
+  // Refers to a new bookmark
+  NewBookmark: AStreamBookmark;
+
+begin
+  result := 0;
+
+  if Source = nil then
+    exit;
+
+  thisBookmarkType := 0;
+
+  // Retrieve the entry count from the stream
+  entryCount := 0;
+  result := Source.read(sizeof(entryCount), entryCount);
+
+  // Rebuild the dictionary
+  while entryCount > 0 do
+  begin
+    // Read the bookmark type
+    result := result + Source.read(sizeof(thisBookmarkType), thisBookmarkType);
+    Source.rewindBy(sizeof(thisBookmarkType));
+
+    // Construct the appropriate bookmark type
+    NewBookmark := Self.NewBookmarkOfType(thisBookmarkType);
+
+    // Add the bookmark
+    if NewBookmark <> nil then
+    begin
+      // Read the bookmark
+      result := result + NewBookmark.readFrom(Source);
+      // Add the bookmark
+      Self.addLeaf(NewBookmark)
+    end
+
+    // If we failed to read a bookmark, we can go no further
+    else
+      break;
+
+    dec(entryCount);
+  end;
 end;
 {$ENDIF}
 

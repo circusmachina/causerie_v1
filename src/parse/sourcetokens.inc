@@ -68,6 +68,16 @@ type ATokenFromSource = class(AToken)
     }
     procedure returnTo(const Source: AStream); override;
 
+    { Determine whether or not the token is allowed by the specified
+      @code(rule).
+
+      This method looks up the rule specified by @code(rule), then passes
+      that reference to @link(AToken.isPartOf) and returns the result.  If
+      @code(rule) specifies a rule that cannot be found, this method returns
+      @false.
+    }
+    function isPartOf(const rule: TSortKey): boolean; overload; virtual;
+
     { Determine whether or not the token is allowed by one of the specified
       rules.
 
@@ -79,19 +89,8 @@ type ATokenFromSource = class(AToken)
       token may appear at the current source location; in other words, it
       allows a parser to check syntax.
     }
-    function isPartOf(const rules: array of TSortKey):TSortKey; virtual;
-
-    { Determine whether or not the token is allowed by one of the named rules.
-
-      This method checks the token opcode against each rule named in
-      @code(rules).  The name of the first rule that contains the token opcode
-      is returned.  If no rule contains the token, an empty string is returned.
-
-      This method is defined to allow a parser to determine whether a given
-      token may appear at the current source location; in other words, it
-      allows a parser to check syntax.
-    }
-    function isPartOf(const rules: array of string): string; virtual;
+    function isPartOfAny(const rules: array of TSortKey):TSortKey; overload;
+      virtual;
 
     { Construct a shallow copy of the other object.
 
@@ -539,6 +538,45 @@ type AnErrorToken = class(ATokenFromSource)
     }
     function readFrom(const Source: AStream): TStreamIOSize; override;
 end;
+
+// AStreamEndingTokenFromSource ************************************************
+{ This class represents the end of a source stream.  While it is possible that
+  some language definitions may specify one or more characters to mark the end
+  of a source stream, it is more likely that this token will be returned when
+  the source stream indicates that its end has been reached.
+}
+type AStreamEndingTokenFromSource = class(ATokenFromSource)
+  public
+    { Initializer }
+    function init: boolean; override;
+
+    { Return the token to its source.
+
+      This method overrides the behavior inherited from @link(AToken).  It
+      does nothing.
+    }
+    procedure returnTo(const Source: AStream); override;
+
+    // CanStream implementation ------------------------------------------------
+    { Read the token from the given source stream.
+
+      To avoid attempts to read beyond the end of the stream, this method does
+      nothing when called.
+
+      @return(The total number of bytes read from @code(Source), which will
+      always be zero (0).)
+    }
+    function readFrom(const Source: AStream): TStreamIOSize; override;
+
+    // CanPrint implementation -------------------------------------------------
+    { Construct and return a string representation of the token, suitable for
+      output to a text-based device, such as a console.
+
+      This method overrides the behavior inherited from @link(AToken); it
+      simply returns the value defined by @link(setkStringRepresentation).
+    }
+    function toString: AnsiString; override;
+end;
 {$ENDIF}
 {$IFDEF ReadImplementation}
 // ATokenFromSource ****************************************************************
@@ -567,7 +605,7 @@ begin
 
   if Source.hasEnded then
   begin
-    Result := AStreamEndingToken.new;
+    Result := AStreamEndingTokenFromSource.using(ThisLanguage);
     exit;
   end;
 
@@ -620,41 +658,30 @@ begin
     Source.rewindBy(System.length(myText));
 end;
 
-// Determine whether the token is part of any of the specified rules
-function ATokenFromSource.isPartOf(const rules: array of TSortKey): TSortKey;
-
-var
-  // Loop counter
-  i: longword;
+// Determine whether the token is part of the specified rule
+function ATokenFromSource.isPartOf(const rule: TSortKey): boolean;
 
 begin
-  result := 0;
+  result := false;
 
-  if System.length(rules) = 0 then
-    exit;
-
-  for i := 0 to System.high(rules) do
-    if MyLanguage.SyntaxRule(rules[i]).has(myOpcode) then
-    begin
-      result := rules[i];
-      break;
-    end;
+  if MyLanguage <> nil then
+    result := Self.isPartOf(MyLanguage.SyntaxRule(rule));
 end;
 
-// Determine whether the token is part of any of the named rules
-function ATokenFromSource.isPartOf(const rules: array of string): string;
+// Determine whether the token is part of any of the specified rules
+function ATokenFromSource.isPartOfAny(const rules: array of TSortKey): TSortKey;
 
 var
   // Loop counter
   i: longword;
 
 begin
-  result := '';
+  result := -1;
 
   if System.length(rules) = 0 then
     exit;
 
-  for i := 0 to System.high(rules) do
+  for i := 0 to (System.length(rules) - 1) do
     if MyLanguage.SyntaxRule(rules[i]).has(myOpcode) then
     begin
       result := rules[i];
@@ -809,11 +836,8 @@ begin
       myOpcode := TOKCAT_IDENTIFIER;
 
     { Return the most recent character to the source }
-    if not Source.hasEnded then
-    begin
-      Source.rewindBy(System.length(ch));
-      dec(result);
-    end;
+    Source.rewindBy(System.length(ch));
+    dec(result);
   end;
 end;
 
@@ -933,11 +957,8 @@ begin
       myOpcode := TOKCAT_ERROR;
 
     { Return the most recent character to the source }
-    if not Source.hasEnded then
-    begin
-      Source.rewindBy(System.length(ch));
-      dec(result);
-    end;
+    Source.rewindBy(System.length(ch));
+    dec(result);
   end;
 end;
 
@@ -1007,11 +1028,8 @@ begin
     until MyLanguage.characterIn(ch, [CHARCAT_SPECIAL]) = CHARCAT_DUMMY;
 
     { Return the most recent character to the source }
-    if not Source.hasEnded then
-    begin
-      Source.rewindBy(System.length(ch));
-      dec(result);
-    end;
+    Source.rewindBy(System.length(ch));
+    dec(result);
 
     { Check to see if we've gathered a keyword or other special token }
     while Charstring.census(myText) > 1 do
@@ -1029,6 +1047,10 @@ begin
       // Return the rightmost character to the source so it will be read again
       Source.rewindBy(System.length(ch));
     end;
+
+    // Check one last time on the single-character string
+    if myOpcode = TOKCAT_DUMMY then
+      myOpcode := MyLanguage.opcodeFor(myText);
 
     { If not a special token, then we have an unrecognized symbol }
     if myOpcode = TOKCAT_DUMMY then
@@ -1111,7 +1133,7 @@ begin
       (ch <> initialCharacter);
 
     { Return the most recent character to the source }
-    if (myConsolidation) and (not Source.hasEnded) then
+    if myConsolidation then
     begin
       Source.rewindBy(System.length(ch));
       dec(result);
@@ -1241,7 +1263,7 @@ begin
       (ch <> initialCharacter);
 
     { Return the most recent character to the source }
-    if (myConsolidation) and (not Source.hasEnded) then
+    if myConsolidation then
     begin
       Source.rewindBy(System.length(ch));
       dec(result);
@@ -1302,14 +1324,48 @@ begin
 
       // Read another character
       result := result + readCharacters(1, ch);
-    until MyLanguage.characterIn(ch, [CHARCAT_ERROR]) = CHARCAT_DUMMY;
+    until MyLanguage.categoryOf(ch) <> CHARCAT_ERROR;
 
     { Return the most recent character to the source }
-    if not Source.hasEnded then
-    begin
-      Source.rewindBy(System.length(ch));
-      dec(result);
-    end;
+    Source.rewindBy(System.length(ch));
+    dec(result);
   end;
+end;
+
+// AStreamEndingTokenFromSource ************************************************
+// Initializer
+function AStreamEndingTokenFromSource.init: boolean;
+
+begin
+  result := inherited init;
+
+  if result then
+  begin
+    myOpcode := TOKCAT_EOS;
+  end;
+end;
+
+// Return the token to the stream -- does nothing
+procedure AStreamEndingTokenFromSource.returnTo(const Source: AStream);
+
+begin
+  exit;
+end;
+
+// CanStream implementation ----------------------------------------------------
+// Read the token from the stream -- does nothing
+function AStreamEndingTokenFromSource.readFrom(const Source: AStream): TStreamIOSize;
+
+begin
+  // Do nothing
+  result := 0;
+end;
+
+// CanPrint implementation -----------------------------------------------------
+// Return a string representation of the token
+function AStreamEndingTokenFromSource.toString: string;
+
+begin
+  result := setkStringRepresentation;
 end;
 {$ENDIF}

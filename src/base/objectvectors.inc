@@ -70,7 +70,8 @@ type AnObjectVector = class(APointerVector)
 
       This method calls @link(APointerVector.appendReference).
     }
-    function appendObject(const ThisObject: AnObject): longword; virtual;
+    function appendObject(const ThisObject: AnObject): TNodeAbsoluteIndex;
+      virtual;
 
     { Pop the last object from the array and return it to the caller.
 
@@ -91,7 +92,7 @@ type AnObjectVector = class(APointerVector)
 
       This method calls @link(APointerVector.insertReferenceAt).
     }
-    procedure insertObjectAt(const thisIndex: longword;
+    procedure insertObjectAt(const thisIndex: TNodeAbsoluteIndex;
       const ThisObject: AnObject); virtual;
 
     { Remove the object at the specified index and return it to the caller.
@@ -104,7 +105,8 @@ type AnObjectVector = class(APointerVector)
 
       This method calls @link(APointerVector.removeReferenceAt).
     }
-    function RemoveObjectAt(const thisIndex: longword): AnObject; virtual;
+    function RemoveObjectAt(const thisIndex: TNodeAbsoluteIndex): AnObject;
+      virtual;
 
     { Delete the object at the specified index.
 
@@ -117,7 +119,7 @@ type AnObjectVector = class(APointerVector)
 
       This method calls @link(APointerVector.removeReferenceAt).
     }
-    procedure deleteObjectAt(const thisIndex: longword); virtual;
+    procedure deleteObjectAt(const thisIndex: TNodeAbsoluteIndex); virtual;
 
     { Retrieve the object at the specified index.
 
@@ -133,7 +135,7 @@ type AnObjectVector = class(APointerVector)
 
       This method calls @link(APointerVector.referenceAt).
     }
-    function ObjectAt(const thisIndex: longword): AnObject; virtual;
+    function ObjectAt(const thisIndex: TNodeAbsoluteIndex): AnObject; virtual;
 
     { Set the object at the specified index.
 
@@ -147,7 +149,7 @@ type AnObjectVector = class(APointerVector)
       @link(AVector.length), then the last object in the array is altered.  If
       the array has no objects, then this method does nothing but return @nil.
     }
-    function SetObjectAt(const thisIndex: longword;
+    function SetObjectAt(const thisIndex: TNodeAbsoluteIndex;
       const ThisObject: AnObject): TObject; virtual;
 
     // CanStream implementation ------------------------------------------------
@@ -208,7 +210,7 @@ type AnObjectVector = class(APointerVector)
 
       @return(The total number of bytes prited to @code(Dest).)
     }
-    function printTo(const Dest: AStream;
+    function printTo(const Dest: ATextOutputStream;
       prefix: AnsiString = '';
       suffix: AnsiString = ''): TStreamIOSize; override;
 
@@ -456,7 +458,7 @@ end;
 
 // CanPrint implementation -----------------------------------------------------
 // Print the array and its contents to the specified stream
-function AnObjectVector.printTo(const Dest: AStream;
+function AnObjectVector.printTo(const Dest: ATextOutputStream;
   prefix: AnsiString = '';
   suffix: AnsiString = ''): TStreamIOSize;
 

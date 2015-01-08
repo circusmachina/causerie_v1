@@ -207,7 +207,7 @@ type ACounterList = class(AStringTree)
 
       @return(The total number of bytes printed to @code(Dest).)
     }
-    function printSelfTo(const Dest: AStream;
+    function printSelfTo(const Dest: ATextOutputStream;
       prefix: AnsiString = '';
       suffix: AnsiString = ''): TStreamIOSize; override;
 end;
@@ -451,7 +451,7 @@ begin
 end;
 
 // Print the list of counters to the given stream
-function ACounterList.printSelfTo(const Dest: AStream;
+function ACounterList.printSelfTo(const Dest: ATextOutputStream;
   prefix: AnsiString = '';
   suffix: AnsiString = ''): TStreamIOSize;
 

@@ -45,13 +45,17 @@ type AnObject = class(TObject)
 
     { Construct a shallow copy of the given object.
 
-      This method calls @link(AnObject.init) on itself, then calls
-      @link(AnObject.shallowCopyFrom) to copy the data from @code(Other).
+      This method calls @code(TObject.ClassType) on @code(Other), then uses
+      the class reference returned to construct a new instance that is of the
+      same type as @code(Other).  It then calls @link(AnObject.shallowCopyFrom)
+      on the new instance.
+
+      If @code(Other) is @nil, this method does nothing and returns @nil.
 
       @raises(AnException if @link(AnObject.init) returns @false when called
       from this method.)
     }
-    constructor shallowCopyOf(const Other: AnObject); virtual;
+    class function shallowCopyOf(const Other: AnObject): AnObject; virtual;
 
     { Initialize a new instance of the class.
 
@@ -180,16 +184,25 @@ begin
 end;
 
 // Construct a shallow copy of the given instance
-constructor AnObject.shallowCopyOf(const Other: AnObject);
+class function AnObject.shallowCopyOf(const Other: AnObject): AnObject;
+
+var
+  // Refers to the class of the object being copied
+  OtherClass: AnObjectClass;
 
 begin
-  inherited create;
+  Result := nil;
 
-  if Self.init = false then
-    raise AnException.because(objErrorInitializing, [Self.name]);
+  // We cannot make a copy of nothing
+  if Other = nil then
+    exit;
 
-  if Other <> nil then
-    Self.shallowCopyFrom(Other);
+  // Construct a new instance
+  OtherClass := AnObjectClass(Other.ClassType);
+  Result := OtherClass.new;
+
+  if Result <> nil then
+    Result.shallowCopyFrom(Other);
 end;
 
 // Initialize the instance

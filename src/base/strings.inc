@@ -41,7 +41,7 @@ type CanPrint = interface
 
     @returns(The total number of bytes printed to @code(Dest).)
   }
-  function printTo(const Dest: AStream;
+  function printTo(const Dest: ATextOutputStream;
     prefix: AnsiString = '';
     suffix: AnsiString = ''): TStreamIOSize;
 end;
@@ -198,7 +198,7 @@ type Charstring = class
         If @code(needle) is not found, then this routine returns zero (0).
       }
       class function lastPositionOf(const needle, haystack: string;
-        startPos: integer = 0): integer;
+        startPos: integer = 1): integer;
 
       { Determines whether @code(s) ends with the string specified by
         @code(ending).
@@ -246,6 +246,21 @@ type Charstring = class
         follows a lower-case letter, then a space is added to the output.
       }
       class function expandCamelCase(const s: string): string;
+
+      { Return a string that consists of the specified character repeated
+        the specified number of times.
+
+        This method constructs a new string that contains @code(count)
+        repetitions of the character specified by @code(thisCharacter).
+        @code(thisCharacter) may specify a UTF-8 or ASCII-encoded character.
+        Only the first such character from @code(thisCharacter) is used; all
+        others are ignored.
+
+        If @code(thisCharacter) is an empty string or @code(count) is zero (0),
+        this method does nothing and returns an empty string.
+      }
+      class function ofCharacter(const thisCharacter: string;
+        const count: longword): string;
 end;
 {$ENDIF}
 {$IFDEF ReadResourceStrings}
@@ -257,6 +272,8 @@ end;
   charsUppercaseLetters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
   { Letters that are considered lowercase }
   charsLowercaseLetters = 'abcdefghijklmnopqrstuvwxyz';
+  { Letters that are considered digits }
+  charsDigits = '0123456789';
 {$ENDIF}
 {$IFDEF ReadImplementation}
 // Charstring ******************************************************************
@@ -282,11 +299,8 @@ begin
   if index < 0 then
     inc(index, Charstring.census(thisString) + 2);
 
-  // Convert to zero-based index instead of Pascal 1-based index
-  dec(index);
-
-  if index < 0 then
-    index := 0;
+  if index < 1 then
+    index := 1;
 
   // Find the character and copy it
   result := LazUtf8.utf8Copy(thisString, index, 1);
@@ -358,13 +372,7 @@ begin
 
       // Collect characters from the string to see if we have a delimiter
       for j := 1 to delimLength do
-      begin
         thisDelimiter := thisDelimiter + Charstring.character(s, i);
-        inc(i);
-
-        if i > listLength then
-          break;
-      end;
 
       // Is it the delimiter?
       if thisDelimiter <> delimiter then
@@ -445,8 +453,8 @@ begin
   if startPos < 0 then
     inc(startPos, Charstring.census(haystack) + 1);
 
-  if startPos < 0 then
-    startPos := 0;
+  if startPos < 1 then
+    startPos := 1;
 
   // Search the string
   result := LazUtf8.utf8Pos(needle, haystack, startPos);
@@ -454,7 +462,7 @@ end;
 
 // Find the last occurrence of a substring within the given string
 class function Charstring.lastPositionOf(const needle, haystack: string;
-  startPos: integer = 0): integer;
+  startPos: integer = 1): integer;
 
 begin
   result := 0;
@@ -462,29 +470,28 @@ begin
   if (needle = '') or (haystack = '') then
     exit;
 
+  // Deal with invalid start offset
+  if startPos > Charstring.census(haystack) then
+    exit;
+
   // Deal with negative indices
   if startPos < 0 then
     inc(startPos, Charstring.census(haystack) + 1);
 
-  if startPos < 0 then
-    startPos := 0;
-
-  // Deal with an invalid starting offset
-  if (startPos = 0) or (startPos > Charstring.census(haystack)) then
-    startPos := Charstring.census(haystack);
+  if startPos < 1 then
+    startPos := 1;
 
   // Find the last occurrence
-  repeat
-    startPos := LazUtf8.utf8Pos(needle, haystack, startPos);
+  startPos := LazUtf8.utf8Pos(needle, haystack, startPos);
 
-    // If the occurrence was not found, then exit the loop
-    if startPos <= 0 then
-      break;
-
+  while startPos > 0 do
+  begin
     result := startPos;
     // Search again
     inc(startPos);
-  until false;
+
+    startPos := LazUtf8.utf8Pos(needle, haystack, startPos);
+  end;
 end;
 
 // Determines whether the given string has the given ending
@@ -581,6 +588,33 @@ begin
 
     previousChar := Charstring.character(s, i);
   end;
+end;
+
+// Construct a string made up of a repeated character
+class function Charstring.ofCharacter(const thisCharacter: string;
+  const count: longword): string;
+
+var
+  // Loop counter
+  i: longword;
+  // Refers to the character in question
+  ch: string;
+
+
+begin
+  result := '';
+
+  if (thisCharacter = '') or (count = 0) then
+    exit;
+
+  if Charstring.census(ch) > 1 then
+    ch := Self.character(thisCharacter, 1)
+
+  else
+    ch := thisCharacter;
+
+  for i := 1 to count do
+    result := result + ch;
 end;
 {$ENDIF}
 

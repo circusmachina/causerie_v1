@@ -79,6 +79,49 @@ type MemorySpan = class
       may occur.
     }
     class procedure copy(source, dest: pointer; const len: longword);
+
+    { Determine the number of bytes that will need to be added to @code(current)
+      so that it is aligned on the specified boundary relative to @code(top).
+
+      This method can be used to ensure that data read from a buffer is aligned
+      to a specific address size.  @code(current) should point to the current
+      position in the buffer, while @code(top) points to the "top" of the
+      buffer -- that is, the first byte in the buffer.
+
+      @code(alignment) should specify the alignment required, in bytes.  An
+      8-bit alignment would require a value of 1; a 16-bit alignment a value of
+      2; a 32-bit alignment a value of 4; and so forth.  If the memory position
+      of @code(current) does divide evenly into the specified @code(alignment),
+      then this method will calculate how many bytes need to be added to
+      @code(alignment) so that it will divide evenly.  This value is then
+      multiplied by @code(increment).
+
+      For example, Windows version information is stored in pseudo-structures,
+      the members of which must sometimes be aligned on a 32-bit address
+      boundary using words (16-bit values).  To have this method calculate the
+      padding necessary to meet this requirement, you would call this method
+      like so: @longcode(#
+
+      var
+        buffer: pchar;
+        currentPos: pchar;
+
+      begin
+        // Assuming 'buffer' and 'currentPos' are valid addresses, and that
+        // 'currentPos' represents a position within 'buffer'...
+        inc(currentPos, MemorySpan.paddingRequired(currentPos, buffer,
+          sizeof(longword), sizeof(word)));
+        // 32 bits = 4 bytes, or sizeof(longword)
+        // 16 bits = 2 bytes, or sizeof(word)
+      end.
+      #)
+
+      If @code(current) or @code(top) are @nil, or if @code(current) does not
+      represent a memory address which is greater than @code(top), then this
+      method does nothing and returns zero (@code(0)).
+    }
+    class function paddingRequired(const current, top: pchar;
+      alignment, increment: longword): longword;
 end;
 {$ENDIF}
 {$IFDEF ReadImplementation}
@@ -171,4 +214,19 @@ begin
       inc(dest, sizeof(byte));
     end;
 end;
+
+// Determine the number of padding bytes required
+class function MemorySpan.paddingRequired(const current, top: pchar;
+  alignment, increment: longword): longword;
+
+begin
+  result := 0;
+
+  if (current <> nil) and (top <> nil) and (current > top) then
+  begin
+    while (((current - top) + result) mod alignment) <> 0 do
+      inc(result, increment);
+  end;
+end;
+
 {$ENDIF}

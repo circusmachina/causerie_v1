@@ -49,7 +49,7 @@ type APointerVector = class(AVector)
       @raises(AVectorAllocationError if a block of memory large enough to
       hold @code(elementCount) could not be allocated.)
     }
-    constructor ofLength(const elementCount: longword); reintroduce; virtual;
+    constructor ofLength(const elementCount: TCensus); reintroduce; virtual;
 
     { Push a pointer onto the end of the array.
 
@@ -77,7 +77,8 @@ type APointerVector = class(AVector)
 
       This method calls @link(AVector.appendElement).
     }
-    function appendReference(const source: pointer): longword; virtual;
+    function appendReference(const source: pointer): TNodeAbsoluteIndex;
+      virtual;
 
     { Add a pointer to the given item to the end of the array and return the
       index assigned to it.
@@ -89,7 +90,7 @@ type APointerVector = class(AVector)
 
       This method calls @link(AVector.appendElement).
     }
-    function appendReferenceTo(var source): longword; virtual;
+    function appendReferenceTo(var source): TNodeAbsoluteIndex; virtual;
 
     { Pop the last pointer from the end of the array.
 
@@ -111,7 +112,7 @@ type APointerVector = class(AVector)
 
       This method calls @link(AVector.insertElementAt).
     }
-    procedure insertReferenceAt(const thisIndex: longword;
+    procedure insertReferenceAt(const thisIndex: TNodeAbsoluteIndex;
       const source: pointer); virtual;
 
     { Insert a pointer to the specified item at the specified index in the
@@ -126,7 +127,8 @@ type APointerVector = class(AVector)
 
       This method calls @link(AVector.insertElementAt).
     }
-    procedure insertReferenceTo(var source; const thisIndex: longword); virtual;
+    procedure insertReferenceTo(var source;
+      const thisIndex: TNodeAbsoluteIndex); virtual;
 
     { Remove and return the pointer at the specified index.
 
@@ -140,7 +142,8 @@ type APointerVector = class(AVector)
 
       This method calls @link(AVector.removeElementAt).
     }
-    function removeReferenceAt(const thisIndex: longword): pointer; virtual;
+    function removeReferenceAt(const thisIndex: TNodeAbsoluteIndex): pointer;
+      virtual;
 
     { Delete the pointer at the specified index.
 
@@ -156,7 +159,7 @@ type APointerVector = class(AVector)
 
       This method calls @link(AVector.deleteElementAt).
     }
-    procedure deleteReferenceAt(const thisIndex: longword); virtual;
+    procedure deleteReferenceAt(const thisIndex: TNodeAbsoluteIndex); virtual;
 
     { Retrieve the pointer at the specified index.
 
@@ -169,7 +172,7 @@ type APointerVector = class(AVector)
 
       This method calls @link(AVector.getElementAt).
     }
-    function referenceAt(const thisIndex: longword): pointer; virtual;
+    function referenceAt(const thisIndex: TNodeAbsoluteIndex): pointer; virtual;
 
     { Set the pointer at the specified index.
 
@@ -182,7 +185,7 @@ type APointerVector = class(AVector)
 
       @return(The previous pointer at the specified index, if any.)
     }
-    function setReferenceAt(const thisIndex: longword;
+    function setReferenceAt(const thisIndex: TNodeAbsoluteIndex;
       const source: pointer): pointer; virtual;
 
     { Set the pointer at the specified index to point to the specified item.
@@ -194,13 +197,13 @@ type APointerVector = class(AVector)
 
       @return(The previous pointer at the specified index, if any.)
     }
-    function setReferenceTo(var source; const thisIndex: longword): pointer;
-      virtual;
+    function setReferenceTo(var source;
+      const thisIndex: TNodeAbsoluteIndex): pointer; virtual;
 end;
 {$ENDIF}
 {$IFDEF ReadImplementation}
 // Constructor
-constructor APointerVector.ofLength(const elementCount: longword);
+constructor APointerVector.ofLength(const elementCount: TCensus);
 
 begin
   inherited ofLength(elementCount, sizeof(pointer));
@@ -227,14 +230,14 @@ begin
 end;
 
 // Append a pointer to the array and retrieve its index
-function APointerVector.appendReference(const source: pointer): longword;
+function APointerVector.appendReference(const source: pointer): TNodeAbsoluteIndex;
 
 begin
   result := Self.appendElement(@source);
 end;
 
 // Append a pointer to the specified item and retrieve its index
-function APointerVector.appendReferenceTo(var source): longword;
+function APointerVector.appendReferenceTo(var source): TNodeAbsoluteIndex;
 
 var
   // Stores a pointer to the specified source item
@@ -256,7 +259,7 @@ begin
 end;
 
 // Insert a pointer at the specified index
-procedure APointerVector.insertReferenceAt(const thisIndex: longword;
+procedure APointerVector.insertReferenceAt(const thisIndex: TNodeAbsoluteIndex;
   const source: pointer);
 
 begin
@@ -265,7 +268,7 @@ end;
 
 // Insert a pointer to the specified item at the specified index
 procedure APointerVector.insertReferenceTo(var source;
-  const thisIndex: longword);
+  const thisIndex: TNodeAbsoluteIndex);
 
 var
   // Stores a reference to the specified source item
@@ -278,7 +281,7 @@ begin
 end;
 
 // Remove the pointer at the specified index
-function APointerVector.removeReferenceAt(const thisIndex: longword): pointer;
+function APointerVector.removeReferenceAt(const thisIndex: TNodeAbsoluteIndex): pointer;
 
 begin
   result := nil;
@@ -287,14 +290,14 @@ begin
 end;
 
 // Delete the pointer at the specified index
-procedure APointerVector.deleteReferenceAt(const thisIndex: longword);
+procedure APointerVector.deleteReferenceAt(const thisIndex: TNodeAbsoluteIndex);
 
 begin
   Self.deleteElementAt(thisIndex);
 end;
 
 // Retrieve the pointer at the specified index
-function APointerVector.referenceAt(const thisIndex: longword): pointer;
+function APointerVector.referenceAt(const thisIndex: TNodeAbsoluteIndex): pointer;
 
 begin
   result := nil;
@@ -303,7 +306,7 @@ begin
 end;
 
 // Set the pointer at the specified index
-function APointerVector.setReferenceAt(const thisIndex: longword;
+function APointerVector.setReferenceAt(const thisIndex: TNodeAbsoluteIndex;
   const source: pointer): pointer;
 
 begin
@@ -318,7 +321,7 @@ end;
 
 // Set the pointer at the specified index to point to the specified item
 function APointerVector.setReferenceTo(var source;
-  const thisIndex: longword): pointer;
+  const thisIndex: TNodeAbsoluteIndex): pointer;
 
 var
   // Stores a reference to the specified source item

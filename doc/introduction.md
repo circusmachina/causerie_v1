@@ -1,9 +1,9 @@
 **causerie v1.0**: A simple, elegant and powerful programming language.  
-Copyright (C) 2014 by [Michael Malicoat][5]  
+Copyright (C) 2014-2015 by [Michael Malicoat][5]  
 [Home page](http://causerie.circusmachina.com) |
 [Source][] |
 [Source documentation](http://projects.circusmachina.com/causerie/) (you're looking at it) |
-[Bug tracker](http://mantis.circusmachina.com)
+[Bug tracker](http://monkeywrench.circusmachina.com)
 
 Introduction
 ------------
@@ -36,7 +36,7 @@ Free Pascal allows the code to be well-structured, if still a bit cumbersome.
 I set out to write the code with profuse documentation and, although this tends
 to slow progress a little, it ensures that I can go back and figure out what
 the *expletive* I was thinking when I wrote a particular routine.  It should
-prove helpful to you, too, if you're interesting in things like parser 
+prove helpful to you, too, if you're interested in things like parser 
 internals -- at least, I hope so.  If you find an error or omission, or if
 something is not quite explained to your satisfaction, even after consulting
 the documentation here, the [causerie wiki][3], or the [various articles][4]

@@ -1,10 +1,10 @@
 { causerie: A simple, elegant, and powerful programming language.
-  Copyright (C) 2014 Michael Malicoat (michael@circusmachina.com).
+  Copyright (C) 2014-2015 Michael Malicoat (michael@circusmachina.com).
     Home page: http://causerie.circusmachina.com
     Source code: https://github.com/circusmachina/causerie_v1
     Source code documentation:
       http://www.circusmachina.com/projects/causerie/doc/html/index.html
-    Bug tracker: http://mantis.circusmachina.com
+    Bug tracker: http://monkeywrench.circusmachina.com
 
   This program will eventually become causerie v1.0.
 
@@ -29,11 +29,22 @@ uses
   {$IFDEF UNIX}{$IFDEF UseCThreads}
   cthreads,
   {$ENDIF}{$ENDIF}
-  classwork, parsing;
+  classwork, parsing, linearc, sysUtils;
 
 {$R *.res}
 
 begin
-  { This program doesn't do much...yet. }
+  try
+    { This program doesn't do much...yet. }
+
+  except
+    // Instances of 'ALoggedItem' have already been printed
+    on AE: AnException do
+      if not(AE is ALoggedItem) then
+        AE.print;
+
+    on E: Exception do
+      writeln(stderr, E.message);
+  end;
 end.
 

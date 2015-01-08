@@ -16,6 +16,34 @@
   with this program.  If not, see <http://www.gnu.org/licenses/>.
 }
 {$IFDEF ReadInterface}
+{ This type is used to represent an absolute index, which is a way of referring
+  to the position of @link(ANode a node) within a sequence of nodes, relative to
+  the beginning of the sequence.  The index is zero-based, with the first node
+  in the sequence always positioned at index zero (@code(0)).
+
+  This type is defined to make code flexible and easy to change.
+}
+type TNodeAbsoluteIndex = longword;
+
+{ This type is used to represent a relative index, which is a way of referring
+  to the position of @link(ANode a node) within a sequence of nodes, relative to
+  a specific node.  Values that are less than zero refer to a node which occurs
+  prior to the node in question, while values that are greater than zero refer
+  to a node which occurs after the node in question.  Values of zero (@code(0))
+  refer to the node in question.
+
+  This type is defined to make code flexible and easy to change.
+}
+type TNodeRelativeIndex = longint;
+
+{ This type is used to represent a census, which is a way of storing the count
+  of @link(ANode nodes) within a list of nodes.
+
+  This type is defined to make code flexible and easy to change.
+}
+type TCensus = longword;
+
+// ANode ***********************************************************************
 { This class represents a single object in a hierarchical linked list.  Each
   node is capable of linking and unlinking with others and each node can have
   children which are, themselves, nodes capable of linking to others and having
@@ -45,7 +73,7 @@ type ANode = class(APrintingObject, CanStream)
     { Store the number of immediate children associated with this node.  This
       count does not include grandchildren.
     }
-    myChildCount: longword;
+    myChildCount: TCensus;
 
   public
     { Construct a new node that will become the older sibling of the node
@@ -123,11 +151,70 @@ type ANode = class(APrintingObject, CanStream)
     }
     procedure swapWith(const Other: ANode); virtual;
 
+    { Retrieve a reference to the sibling of the current node which is at the
+      specified position relative to the current node.
+
+      @code(relativePosition) may be a positive or negative value.  If a
+      positive value greater than zero (@code(0)), then this method will
+      recursively step through the chain of nodes attached to
+      @link(ANode.Next Self.Next) until it reaches the node which is
+      @code(relativePosition) steps down the chain.  If @code(relativePosition)
+      is a negative value, then this method will recursively step through the
+      chain of nodes attached to @link(ANode.Previous Self.Previous) until it
+      reaches the node which is @code(relativePosition) steps up the chain.  In
+      either case, if the end of the chain is reached before the number of
+      steps specified by @code(relativePosition), then this method will return
+      @nil.
+
+      If @code(relativePosition) is zero (@code(0)), this method returns a
+      reference to the current node (@code(Self)).
+
+      It may be helpful to remember that the node specified by
+      @link(ANode.Previous Self.Previous) will always be at position
+      @code(-1) relative to @code(Self), while the node specified by
+      @link(ANode.Next Self.Next) will always be at position @code(1) relative
+      to @code(Self).
+    }
+    function SiblingAtRelativePosition(relativePosition: TNodeRelativeIndex): ANode;
+      virtual;
+
+    { Retrieve a reference to the sibling of the current node which is at the
+      specified absolute position relative to the current node.
+
+      This method follows the chain of nodes attached to
+      @code(ANode.Previous Self.Previous) until it reaches the first node in
+      the chain; it then steps back down through the chain until it reaches
+      the node at the specified position.  If the end of the chain is reached
+      before the number of steps specified by @code(absolutePosition), then
+      this method will return @nil.
+
+      This method operates on the assumption that node indices are zero-based;
+      therefore, if @code(absolutePosition) is zero (@code(0)), this method
+      will return a reference to the first node in the chain.
+
+      This method can be used to find the node at a specified index within a
+      list of nodes; however, it is worth noting that the index of a node
+      within a linked list can be changed by adding or removing nodes in front
+      of the node in question.  Furthermore, for large lists of nodes, this
+      method can be inefficient as it must traverse the chain backwards and
+      then forward again.
+    }
+    function SiblingAtAbsolutePosition(absolutePosition: TNodeAbsoluteIndex): ANode;
+      virtual;
+
     { Detaches this node and its children from any siblings.  This effectively
       removes the node from its associated list, but it does not free the
       node or its children.
     }
     procedure detach; virtual;
+
+    { Detaches this node from its parent.  This effectively removes the node
+      from the list of nodes managed by the parent, but it does not free the
+      node or its children.
+
+      If the node has no parent, this routine does nothing.
+    }
+    procedure detachFromParent; virtual;
 
     { Adopts all children associated with the node specified by @code(Other),
       effectively transferring those children to the control of this node.
@@ -194,7 +281,7 @@ type ANode = class(APrintingObject, CanStream)
 
       @return(The total number of bytes printed to @code(Dest).)
     }
-    function printSelfTo(const Dest: AStream;
+    function printSelfTo(const Dest: ATextOutputStream;
       prefix: AnsiString = '';
       suffix: AnsiString = ''): TStreamIOSize; virtual;
 
@@ -293,7 +380,7 @@ type ANode = class(APrintingObject, CanStream)
 
       @return(The total number of bytes printed to @code(Dest).)
     }
-    function printTo(const Dest: AStream;
+    function printTo(const Dest: ATextOutputStream;
       prefix: AnsiString = '';
       suffix: AnsiString = ''): TStreamIOSize; override;
 
@@ -334,7 +421,7 @@ type ANode = class(APrintingObject, CanStream)
     { Retrieves the number of immediate children associated with this node.
       This count does not include grandchildren.
     }
-    function census: longword; virtual;
+    function census: TCensus; virtual;
   end;
 
 { This declaration simplifies the implementation of @link(ABinaryTree),
@@ -430,6 +517,9 @@ end;
 destructor ANode.destroy;
 
 begin
+  // Detach from our parent
+  Self.detachFromParent;
+
   // Free our older siblings
   if MyPrevious <> nil then
     MyPrevious.free;
@@ -437,6 +527,7 @@ begin
   // Free our children, if we have any
   if MyChild <> nil then
     MyChild.free;
+
   inherited destroy;
 end;
 
@@ -451,10 +542,15 @@ procedure ANode.attach(const Other: ANode);
 begin
   if Other <> nil then
   begin
+    Other.detach;
+
     // Attach the child node
+    Other.MyParent := Self;
     Other.MyPrevious := MyChild;
+
     if MyChild <> nil then
       MyChild.MyNext := Other;
+
     MyChild := Other;
     inc(myChildCount);
   end;
@@ -470,15 +566,17 @@ procedure ANode.attachTo(const Other: ANode);
 begin
   // Detach ourselves from any previous associations
   Self.detach;
+
   // Attach to our parent
   MyParent := Other;
+
   // We might have siblings...
   if MyParent <> nil then
   begin
     MyPrevious := MyParent.MyChild;
     if MyPrevious <> nil then
       MyPrevious.MyNext := Self;
-    MyParent.myChild := Self;
+    MyParent.MyChild := Self;
     inc(MyParent.myChildCount);
   end;
 end;
@@ -495,14 +593,17 @@ begin
   begin
     // Detach ourselves from any previous associations
     Self.detach;
+
     // Attach to our parent
     MyParent := Other.MyParent;
     if MyParent <> nil then
       inc(MyParent.MyChildCount);
+
     // We have at least one sibling
     MyNext := Other;
     MyPrevious := Other.MyPrevious;
     Other.MyPrevious := Self;
+
     // See if we have another sibling and attach to it
     if MyPrevious <> nil then
       MyPrevious.MyNext := Self;
@@ -521,14 +622,17 @@ begin
   begin
     // Detach ourselves from any previous associations
     Self.detach;
+
     // Attach to our parent
     MyParent := Other.MyParent;
     if MyParent <> nil then
       inc(MyParent.myChildCount);
+
     // We have at least one sibling
     MyPrevious := Other;
     MyNext := Other.MyNext;
     Other.MyNext := Self;
+
     // See if we have another sibling and attach to it
     if MyNext <> nil then
       MyNext.MyPrevious := Self;
@@ -545,18 +649,22 @@ procedure ANode.append(const Sibling: ANode);
 begin
   if Sibling <> nil then
   begin
+    Sibling.detach;
+
     // Attach the new node to our common parent
     Sibling.MyParent := MyParent;
     if MyParent <> nil then
-      inc(MyParent.MyChildCount);
+      inc(MyParent.myChildCount);
+
     // If we already have a sibling after us, bump it out of the way
     if MyNext <> nil then
     begin
       Sibling.MyNext := MyNext;
       MyNext.MyPrevious := Sibling;
     end;
+
     MyNext := Sibling;
-    MyNext.MyPrevious := Self;
+    Sibling.MyPrevious := Self;
   end;
 end;
 
@@ -568,18 +676,22 @@ end;
 procedure ANode.prepend(const Sibling: ANode);
 
 begin
-  if sibling <> nil then
+  if Sibling <> nil then
   begin
+    Sibling.detach;
+
     // Attach the new node to our common parent
     Sibling.MyParent := MyParent;
     if MyParent <> nil then
       inc(MyParent.MyChildCount);
+
     // If we already have a sibling before us, bump it out of the way
     if MyPrevious <> nil then
     begin
       Sibling.MyPrevious := MyPrevious;
       MyPrevious.MyNext := Sibling;
     end;
+
     MyPrevious := Sibling;
     Sibling.MyNext := Self;
   end;
@@ -606,6 +718,54 @@ begin
   Other.MyNext := OriginalNext;
 end;
 
+// Find the sibling at the specified relative position
+function ANode.SiblingAtRelativePosition(relativePosition: TNodeRelativeIndex): ANode;
+
+begin
+  Result := Self;
+
+  if relativePosition < 0 then
+    while relativePosition < 0 do
+    begin
+      Result := Result.Previous;
+      inc(relativePosition);
+
+      if Result = nil then
+        break;
+    end
+
+  else if relativePosition > 0 then
+    while relativePosition > 0 do
+    begin
+      Result := Result.Next;
+      dec(relativePosition);
+
+      if Result = nil then
+        break;
+    end;
+end;
+
+// Find the sibling at the specified absolute position
+function ANode.SiblingAtAbsolutePosition(absolutePosition: TNodeAbsoluteIndex): ANode;
+
+begin
+  // Find the beginning of the list
+  Result := Self;
+
+  while Result.Previous <> nil do
+    Result := Result.Previous;
+
+  // Step through the list
+  while absolutePosition > 0 do
+  begin
+    Result := Result.Next;
+    dec(absolutePosition);
+
+    if Result = nil then
+      break;
+  end;
+end;
+
 {* Detaches the node and its children from the list of nodes being managed by
    its parent.  The parent list is updated to fill the gap left by the
    removal of this node.
@@ -621,6 +781,17 @@ begin
     MyNext.MyPrevious := MyPrevious;
 
   // Detach from our parent, if we have one
+  Self.detachFromParent;
+
+  MyPrevious := nil;
+  MyNext := nil;
+  MyParent := nil;
+end;
+
+// Detach from the parent
+procedure ANode.detachFromParent;
+
+begin
   if MyParent <> nil then begin
     if MyNext <> nil then
       MyParent.MyChild := MyNext
@@ -628,7 +799,7 @@ begin
     else
       MyParent.MyChild := MyPrevious;
 
-    dec(MyParent.MyChildCount);
+    dec(MyParent.myChildCount);
   end;
 end;
 
@@ -695,7 +866,7 @@ begin
 end;
 
 // Print the node, and just the node, to the specified stream
-function ANode.printSelfTo(const Dest: AStream;
+function ANode.printSelfTo(const Dest: ATextOutputStream;
   prefix: AnsiString = '';
   suffix: AnsiString = ''): TStreamIOSize;
 
@@ -755,7 +926,7 @@ var
   // Refers to a new node
   NewNode: ANode;
   // Stores the number of children of the node
-  nodeChildren: longword;
+  nodeChildren: TCensus;
 
 begin
   // First, read the number of children of the node
@@ -789,6 +960,7 @@ end;
 function ANode.toString: AnsiString;
 
 begin
+
   if myChildCount <> 1 then
     result := format(nodeStringRepresentationPlural, [
       Self.displayName, myChildCount
@@ -806,7 +978,7 @@ end;
    \return The total number of bytes written to \p Dest.  This value will be
    zero (0) if \p Dest is #nil.
 *}
-function ANode.printTo(const Dest: AStream;
+function ANode.printTo(const Dest: ATextOutputStream;
   prefix: AnsiString = '';
   suffix: AnsiString = ''): TStreamIOSize;
 
@@ -816,14 +988,14 @@ begin
   begin
     // Print our older siblings first
     if MyPrevious <> nil then
-      result := MyPrevious.printTo(Dest);
+      result := MyPrevious.printTo(Dest, prefix, suffix);
 
     // Print ourselves
     result := result + Self.printSelfTo(Dest, prefix, suffix);
 
     // Print each child node
     if MyChild <> nil then
-      result := result + MyChild.printTo(Dest);
+      result := result + MyChild.printTo(Dest, prefix, suffix);
   end;
 end;
 
@@ -870,7 +1042,7 @@ begin
 end;
 
 /// Retrieves the number of children this node has
-function ANode.census: longword;
+function ANode.census: TCensus;
 
 begin
   result := myChildCount;

@@ -33,11 +33,11 @@ type TOpcodeList = array of TOpcode;
   because it is assumed that they will be defined at compile-time as part of
   a language specification.
 
-  Instances of @link(ASyntaxRule) descend from @link(AStringLeaf) so that they
+  Instances of @link(ASyntaxRule) descend from @link(ABinaryLeaf) so that they
   can be gathered together into lists of rules, such as @link(ASyntaxRuleset),
   that define the grammar for a particular parsed language.
 }
-type ASyntaxRule = class(AStringLeaf)
+type ASyntaxRule = class(ABinaryLeaf)
   protected
     { Stores the opcodes associated with the rule }
     myComponents: TOpcodeList;
@@ -49,20 +49,8 @@ type ASyntaxRule = class(AStringLeaf)
       The opcodes provided by @code(thisList) are used to specify the opcodes
       that apply to the rule.
     }
-    constructor withSortKey(const thisKey: TSortKey;
-      const thisList: array of TOpcode); reintroduce; virtual;
-
-    { Construct a new rule with the specified sort key and which incorporates
-      the specified opcodes.
-
-      The hash value of @code(thisKey), as determined by a call to
-      @link(Charstring.hashValueOf), is used as the sort key of the rule.
-
-      The opcodes provided by @code(thisList) are used to specify the opcodes
-      that apply to the rule.
-    }
-    constructor named(const thisKey: string;
-      const thisList: array of TOpcode); reintroduce; virtual;
+    constructor withIdentifier(const thisKey: TSortKey;
+      const thisList: array of TOpcode); virtual;
 
     { Initializer }
     function init: boolean; override;
@@ -216,11 +204,11 @@ end;
   help to control how a parser processes source.
 
   The collection of rules is implemented as a binary tree: rules can be added
-  and removed, and can be retrieved by their sort key, which can be a hashed
-  string or an integer value.  Rulesets can also be written to and read from
-  arbitrary streams.  For more information, see @link(AStringTree).
+  and removed, and can be retrieved by their sort key, which can be an integer
+  value.  Rulesets can also be written to and read from arbitrary streams.  For
+  more information, see @link(ABinaryTree).
 }
-type ASyntaxRuleset = class(AStringTree)
+type ASyntaxRuleset = class(ABinaryTree)
   public
     // Initializer
     function init: boolean; override;
@@ -246,19 +234,6 @@ type ASyntaxRuleset = class(AStringTree)
     function addNewRule(const thisKey: TSortKey;
       const thisList: array of TOpcode): boolean; virtual;
 
-    { Add a rule with the given name to the ruleset.
-
-      This method constructs an instance of @link(ASyntaxRule) that is named
-      @code(thisKey) by calling @link(ASyntaxRule.named).  It then attempts to
-      add the rule to the ruleset by calling
-      @link(ABinaryTree.addLeaf ASyntaxRuleset.addLeaf) on @code(Self).
-
-      @return(@true if the new rule was successfully created and inserted;
-      @false if not).
-    }
-    function addNewRule(const thisKey: string;
-      const thisList: array of TOpcode): boolean; virtual;
-
     // Properties --------------------------------------------------------------
     { Retrieve a reference to the rule with the specified sort key.
 
@@ -270,94 +245,16 @@ type ASyntaxRuleset = class(AStringTree)
       routine.
     }
     function Rule(const thisKey: TSortKey): ASyntaxRule; virtual;
-
-    { Retrieve a reference to the rule with the specified name.
-
-      The value of @code(thisKey) is hashed by calling
-      @link(Charstring.hashValueOf); this value is then passed to
-      @link(ABinaryTree.fetchLeaf).  A reference to the matching rule, if found,
-      is returned to the caller.  If the rule is not found, then this method
-      returns @nil.
-
-      The caller should NOT attempt to free the reference returned by this
-      routine.
-    }
-    function Rule(const thisKey: string): ASyntaxRule; virtual;
 end;
-
-// Default syntax rules recognized by a parser
-const
-  { Rules in @link(ASyntaxRuleset) can be retrieved by an arbitrary name or
-    value; however, it is common to define a symbolic constant for each rule so
-    that the rule name or value does not have to be hard-coded.  In addition,
-    there are some basic rules that will probably be common across all types of
-    parsers: rules defining basic token types and indicating which tokens are
-    allowed to begin and end a statement.
-
-    This constant is used to define an invalid rule (no rule).
-  }
-  RULE_NONE = 0;
-
-  { Rules in @link(ASyntaxRuleset) can be retrieved by an arbitrary name or
-    value; however, it is common to define a symbolic constant for each rule
-    so that the rule name or value does not have to be hard-coded.  In addition,
-    there are some basic rules that will probably be common across all types of
-    parsers: a rules defining basic token types and a rule to indicate which
-    tokens are allowed to begin and end a statement.
-
-    This constant is used to define the basic token categories that a scanner
-    recognizes.  It is inserted automatically by the base code in
-    @link(AParsedLanguage) every time an instance of that class, or one of its
-    descendants, is instantiated.
-  }
-  RULE4_BASIC_TOKENS = RULE_NONE + 1;
-
-  { Rules in @link(ASyntaxRuleset) can be retrieved by an arbitrary name or
-    value; however, it is common to define a symbolic constant for each rule
-    so that the rule name or value does not have to be hard-coded.  In addition,
-    there are some basic rules that will probably be common across all types of
-    parsers: a rules defining basic token types and a rule to indicate which
-    tokens are allowed to begin and end a statement.
-
-    This constant is used to define the tokens that may begin a statement.  It
-    is not automatically used by the base instance of @link(AParsedLanguage),
-    but is provided here as a way to standardize the way in which one of the
-    more fundamental rules of a parsed language is defined.
-  }
-  RULE4_BEGINNING_STATEMENTS = RULE4_BASIC_TOKENS + 1;
-
-  { Rules in @link(ASyntaxRuleset) can be retrieved by an arbitrary name or
-    value; however, it is common to define a symbolic constant for each rule
-    so that the rule name or value does not have to be hard-coded.  In addition,
-    there are some basic rules that will probably be common across all types of
-    parsers: a rules defining basic token types and a rule to indicate which
-    tokens are allowed to begin and end a statement.
-
-    This constant is used to define the tokens that may end a statement.  It
-    is not automatically used by the base instance of @link(AParsedLanguage),
-    but is provided here as a way to standardize the way in which one of the
-    more fundamental rules of a parsed language is defined.
-  }
-  RULE4_ENDING_STATEMENTS = RULE4_BEGINNING_STATEMENTS + 1;
 {$ENDIF}
 {$IFDEF ReadImplementation}
 // ASyntaxRule *****************************************************************
 // Constructor
-constructor ASyntaxRule.withSortKey(const thisKey: TSortKey;
+constructor ASyntaxRule.withIdentifier(const thisKey: TSortKey;
   const thisList: array of TOpcode);
 
 begin
   inherited withSortKey(thisKey);
-
-  Self.addSeveral(thisList);
-end;
-
-// Constructor
-constructor ASyntaxRule.named(const thisKey: string;
-  const thisList: array of TOpcode);
-
-begin
-  inherited named(thisKey);
 
   Self.addSeveral(thisList);
 end;
@@ -441,8 +338,8 @@ end;
 function ASyntaxRule.hasAnyOf(const opcodeList: array of TOpcode): TOpcode;
 
 var
-  // Loop counters
-  i, j: longint;
+  // Loop counter
+  i: longint;
 
 begin
   result := 0;
@@ -450,19 +347,13 @@ begin
   if System.length(opcodeList) = 0 then
     exit;
 
-
   // Search through the list of components
-  for i := 0 to (Self.census - 1) do
-  begin
-    // Search through the list of opcodes
-    for j := 0 to (System.length(opcodeList) - 1) do
-      // If a match is found, return it and exit
-      if myComponents[i] = opcodeList[j] then
-      begin
-        result := myComponents[i];
-        exit;
-      end;
-  end;
+  for i := 0 to (System.length(opcodeList) - 1) do
+    if Self.find(myComponents[i]) <> -1 then
+    begin
+      result := myComponents[i];
+      break;
+    end;
 end;
 
 // Find the first occurrence of the specified opcode
@@ -472,9 +363,17 @@ function ASyntaxRule.find(const opcode: TOpcode;
 var
   // Loop counter
   i: longint;
+  // Stores a reference to a sibling rule
+  Sibling: ASyntaxRule;
 
 begin
   result := -1;
+
+{$IFDEF DEBUG}
+  writeln(SysUtils.format('Rule %.8X: Searching for opcode %.8X after index %d...', [
+    mySortKey, opcode, afterIndex
+  ]));
+{$ENDIF}
 
   // We cannot search beyond the end of the list
   if afterIndex >= Self.census then
@@ -486,7 +385,37 @@ begin
     begin
       result := i;
       break;
+    end
+
+    // Check for a reference to another rule
+    else if ((myComponents[i] and TOKCAT_CATMASK) = TOKCAT_RULE) and
+      (MyParent <> nil) then
+    begin
+      // Fetch the rule indicated
+      Sibling := nil;
+      if MyParent is ASyntaxRuleset then
+        Sibling := ASyntaxRuleset(MyParent).Rule(myComponents[i]);
+
+      // See if that rule has the desired opcode
+      // Sibling <> Self: do what we can to prevent circular references
+      if (Sibling <> nil) and (Sibling <> Self) and (Sibling.has(opcode)) then
+      begin
+        result := i;
+        break;
+      end;
     end;
+
+{$IFDEF DEBUG}
+  if result <> - 1 then
+    writeln(SysUtils.format('Rule %.8X: Opcode found!', [
+      mySortKey
+    ]))
+
+  else
+    writeln(SysUtils.format('Rule %.8X: Opcode not found', [
+      mySortKey
+    ]));
+{$ENDIF}
 end;
 
 // Construct a shallow copy of the other object
@@ -623,6 +552,10 @@ function ASyntaxRuleset.addRule(const ThisRule: ASyntaxRule;
 
 begin
   result := Self.addLeaf(ThisRule, freeOnFailure);
+
+  if result then
+    // Set the parent of the rule, for use with ASyntaxRule.find()
+    ThisRule.MyParent := Self;
 end;
 
 // Add a new syntax rule to the ruleset
@@ -636,26 +569,7 @@ var
 begin
   result := false;
 
-  NewRule := ASyntaxRule.withSortKey(thisKey, thisList);
-  if NewRule = nil then
-    exit;
-
-  // Attempt to add the rule, and free it on failure
-  result := Self.addRule(NewRule, true);
-end;
-
-// Add a new syntax rule to the ruleset
-function ASyntaxRuleset.addNewRule(const thisKey: string;
-  const thisList: array of TOpcode): boolean;
-
-var
-  // Refers to the new rule
-  NewRule: ASyntaxRule;
-
-begin
-  result := false;
-
-  NewRule := ASyntaxRule.named(thisKey, thisList);
+  NewRule := ASyntaxRule.withIdentifier(thisKey, thisList);
   if NewRule = nil then
     exit;
 
@@ -668,14 +582,7 @@ end;
 function ASyntaxRuleset.Rule(const thisKey: TSortKey): ASyntaxRule;
 
 begin
-  Result := ASyntaxRule(Self.fetch(thisKey));
-end;
-
-// Retrieve the named rule
-function ASyntaxRuleset.Rule(const thisKey: string): ASyntaxRule;
-
-begin
-  Result := ASyntaxRule(Self.fetch(thisKey));
+  Result := ASyntaxRule(Self.fetchLeaf(thisKey));
 end;
 {$ENDIF}
 

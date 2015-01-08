@@ -285,7 +285,7 @@ function AnOpcodeDictionary.bind(const tokenString: string;
 begin
   Result := AnOpcodeDictionaryEntry.binding(tokenString, opcode);
 
-  if (Result <> nil) and (Result <> inherited insert(Result)) then
+  if (Result <> nil) and (Result <> inherited insertLeaf(Result)) then
   begin
     Result.free;
     Result := nil;
@@ -321,8 +321,7 @@ var
 
 begin
   result := 0;
-
-  Entry := AnOpcodeDictionaryEntry(Self.fetch(tokenString));
+  Entry := AnOpcodeDictionaryEntry(Self.fetchLeaf(tokenString));
 
   if Entry <> nil then
     result := Entry.code;

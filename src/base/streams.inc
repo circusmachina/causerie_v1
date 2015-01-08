@@ -148,8 +148,7 @@ type
       @link(AStream.write) on each.  The type information encoded by the
       compiler is used to determine the size of each value to write.  The
       values are written as-is, in binary form, making this method unsuitable
-      for printing text output; for that, call @link(AStream.printEach)
-      instead.
+      for printing text output.
 
       It is possible to pass instances of objects to this routine, but they
       must be members of a class that implements @link(CanStream).  This routine
@@ -163,38 +162,6 @@ type
       be less than expected if certain items in @code(vals) were skipped.)
     }
     function writeEach(const vals: array of const): TStreamIOSize; virtual;
-
-    { Print the specificed string to the stream.
-
-      This method will print the contents of @code(str) to the stream.  It is
-      primarily designed to be used with text-based output streams, such as
-      @link(AStandardOutputStream), since it does not record the length of the
-      string so that it can be read later.  To write a string, including its
-      length, to the stream, use @link(AStream.writeString) instead.
-
-      @return(The total number of bytes printed to the stream.  This value will
-      be zero if @code(str) is an empty string.)
-    }
-    function print(const str: AnsiString): TStreamIOSize; virtual;
-
-    { Print each value in @code(vals) to the stream.
-
-      This method is defined and implemented as a convenience function; it
-      writes a string representation of each variable provided in @code(vals) to
-      the stream.
-
-      It is possible to pass instances of objects to this routine, but they
-      must be members of a class that implements @link(CanPrint).  This routine
-      will call the @code(printTo) method for all such instances passed.  All
-      other object instances passed to this routine are ignored.
-
-      If a class reference is passed to this routine, it will output a string
-      containing the name of the class.
-
-      @return(The total number of bytes printed to the stream.  This value may
-      be less than expected if certain items in @code(vals) were skipped.)
-    }
-    function printEach(const vals: array of const): TStreamIOSize; virtual;
 
     { Write a string to the stream.
 
@@ -217,7 +184,7 @@ type
 
       Because it writes the binary value of the length specifier to the stream,
       this method is not suitable for simply printing a string for display to
-      an end-user; for that, @link(AStream.print) should be used.
+      an end-user.
 
       @return(The total number of bytes printed to the stream.  This value
       should be the length of @code(str) plus the length of its length
@@ -417,6 +384,10 @@ begin
           result := result + Self.write(sizeof(vals[i].vchar),
             vals[i].vchar);
 
+        vtWideChar:
+          result := result + Self.write(sizeof(vals[i].vWideChar),
+            vals[i].vWideChar);
+
         vtExtended:
           result := result + Self.write(sizeof(vals[i].vextended^),
             vals[i].vextended^);
@@ -431,6 +402,10 @@ begin
         vtPChar:
           result := result + Self.writeString(vals[i].vpchar^);
 
+        vtPWideChar:
+          result := result +
+            Self.writeString(System.wideCharToString(vals[i].vpWideChar));
+
         vtObject:
           if (vals[i].vobject <> nil) and (vals[i].vobject is AnObject) then
             if AnObject(vals[i].vobject) is CanStream then
@@ -439,98 +414,23 @@ begin
 
         vtClass:
           if vals[i].vclass <> nil then
-            result := result + Self.print(vals[i].vclass.className);
+            result := result + Self.writeString(vals[i].vclass.className);
 
         vtAnsiString:
           result := result + Self.writeString(AnsiString(vals[i].vansistring));
-      end;
-    end;
-  end;
-end;
 
-{* Writes a string to the stream.  This method calls the abstract method
-   AStream::write() to perform the actual writing.
+        vtWideString:
+          result := result + Self.writeString(WideString(vals[i].vWideString));
 
-   \return A value indicating the number of bytes written to the stream.  This
-   value may be zero if the string was empty.
-*}
-function AStream.print(const str: AnsiString): TStreamIOSize;
+        vtUnicodeString:
+          result := result +
+            Self.writeString(UnicodeString(vals[i].vUnicodeString));
 
-begin
-  result := 0;
-  if str <> '' then
-    result := Self.write(system.length(str), str[1]);
-end;
+        vtInt64:
+          result := result + Self.write(sizeof(int64), vals[i].vInt64^);
 
-{* Converts each member of \p vals to a string and writes it to the stream.
-   This method is primarily designed to make it easy to quickly output data
-   from various sources to a console display or text file; the strings it
-   produces are NOT preceded by length specifiers and so are unsuitable for
-   later retrieval from the stream.
-
-   For members of \p vals that are instances of AnObject which also implement
-   CanPrint, this routine calls CanPrint::printTo() in order to produce
-   output for that object.
-
-   \return The total number of bytes written to the stream.  This value should
-   be the sum total of the memory occupied by all the members of \p vals, but
-   may be less than expected if an error occurred while writing.
-*}
-function AStream.printEach(const vals: array of const): TStreamIOSize;
-
-var
-  // Loop counter
-  i: longword;
-
-begin
-  result := 0;
-
-  if system.length(vals) > 0 then
-  begin
-    for i := 0 to high(vals) do
-    begin
-      case vals[i].vtype of
-        vtInteger:
-          result := result + Self.print(intToStr(vals[i].vinteger));
-
-        vtBoolean:
-          if vals[i].vboolean then
-            result := result + Self.print('true')
-
-          else
-            result := result + Self.print('false');
-
-        vtChar:
-          result := result + Self.print(vals[i].vchar);
-
-        vtExtended:
-          result := result + Self.print(floatToStr(vals[i].vextended^));
-
-        vtString:
-          result := result + Self.print(vals[i].vstring^);
-
-        vtPointer:
-          result := result + Self.print(intToHex(int64(vals[i].vpointer),
-            (sizeof(int64) div 4)));
-
-        vtPChar:
-          result := result + Self.print(vals[i].vpchar^);
-
-        vtObject:
-          if (vals[i].vobject <> nil) and (vals[i].vobject is AnObject) then
-            if AnObject(vals[i].vobject) is CanPrint then
-              with vals[i].vobject as CanPrint do
-                result := result + printTo(Self);
-
-        vtClass:
-          if vals[i].vclass <> nil then
-            result := result + Self.print(vals[i].vclass.className)
-
-          else
-            result := result + Self.print('Class: NIL');
-
-        vtAnsiString:
-          result := result + Self.print(AnsiString(vals[i].vansistring));
+        vtQWord:
+          result := result + Self.write(sizeof(qword), vals[i].vQWord^);
       end;
     end;
   end;

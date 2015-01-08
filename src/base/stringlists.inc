@@ -97,9 +97,9 @@ type AStringListItem = class(ANode)
   // CanPrint implementation ---------------------------------------------------
     { Construct and return a string representation of the node.
 
-      Unlike the method inherited from @link(ANode), which returns a string
-      indicating the name of the node and how many children it has, this method
-      simply returns the value of @link(AStringListItem.text).
+      In accordance with the criteria described in
+      @link(APrintingObject.toString), this method returns the value of
+      @link(AStringListItem.text).
     }
     function toString: AnsiString; override;
 
@@ -122,15 +122,19 @@ end;
 }
 type AStringList = class(ALinkedList)
   protected
-    { Partitions the list as part of a quick sort }
-    function partition(Left, Right, Pivot: ANode;
-      const reverse: boolean = false): ANode; virtual;
-
     { Performs a quick sort }
-    procedure quickSort(Left, Right: ANode;
-      const reverse: boolean = false); virtual;
+    procedure quickSort(Left, Right: ANode); virtual;
 
   public
+    { Construct a new string list that contains the specified strings.
+
+      This method calls @link(AStringList.pushSeveral) to insert the strings in
+      @code(strings) into the list after the new instance has been constructed
+      and initialized.  If @code(strings) is empty, then an empty list is
+      created by this routine.
+    }
+    constructor withStrings(const strings: array of string); virtual;
+
     { Construct a new string list by expanding the values provided in
       @code(thisList).
 
@@ -143,33 +147,49 @@ type AStringList = class(ALinkedList)
       this routine.
     }
     constructor from(const thisList: string;  const thisDelimiter: string = '');
+      virtual;
+
+    { Wrap the contents of a string that may span several lines so that it fits
+      within the given line length.
+
+      This method splits @code(str) into one or more tokens by splitting
+      @code(str) wherever a character in @code(breakCharacters) occurs.  It then
+      strings tokens together into one or more lines, ensuring that each line is
+      no more than @code(lineLength) characters in length.  If @code(lineLength)
+      is zero (0), then the value specified by @link(tosDefaultLineLength) is
+      used.
+
+      The first line is padded on the left by repeated @code(padCharacter)s
+      unless @code(firstLineStartColumn) is zero (0).  Any subsequent lines are
+      padded on the left by repeating @code(padCharacter)s only if
+      @code(remainingLineStartColumn) is greater than zero (0).
+
+      @code(breakCharacters) may specify UTF-8 or ASCII-encoded characters.
+      Only the first UTF-8 or ASCII-encoded character in each string specified
+      by @code(breakCharacters) is used to break @code(str); any remaining
+      characters are ignored.  The default characters specified by
+      @link(tosWrapDefaultBreakCharacters) may be used.
+
+      @code(padCharacter) may specify a UTF-8 or ASCII-encoded character.  Only
+      the first UTF-8 or ASCII-encoded character in @code(padCharacter) is used
+      to pad each line; any remaining characters are ignored.  If
+      @code(padCharacter) is an empty string, the value of
+      @link(tosWrapDefaultPadCharacter) is used.
+
+      @return(A string list that contains one item for each line of @code(str).
+      The caller is responsible for freeing this list when it is no longer
+      required.  If @code(str) is an empty string, this function will return
+      @nil.)
+    }
+    class function wrapString(const str: string;
+      const breakCharacters: array of string;
+      lineLength: longword = tosDefaultLineLength;
+      const firstLineStartColumn: longword = 0;
+      const remainingLineStartColumn: longword = 0;
+      padCharacter: string = ''): AStringList; virtual;
 
     { Initializer }
     function init: boolean; override;
-
-    { Add the items specified in @code(thisList) to the list.
-
-      This method assumes that @code(thisList) contains one or more values that
-      are separated by a delimiter of some kind (e.g., a comma).  It uses the
-      value of @code(delimiter) to split the string into its component values;
-      these values are then added as individual items to the list.  If
-      @code(delimiter) is not supplied, or if it is an empty string, then
-      the value of @link(slstDefaultDelimiter) is used.
-
-      @return(The total number of items added to the list.)
-    }
-    function explode(thisList: string;
-      delimiter: string = ''): longword; virtual;
-
-    { Condenses the values in the list into a delimited string.
-
-      This method uses the value of @code(delimiter) to separate the values in
-      the list, which are all condensed into a single string that is returned to
-      the caller.  If @code(delimiter) is not supplied by the caller, or if it
-      is an empty string, then the value of @link(slstDefaultDelimiter) is
-      used.
-    }
-    function implode(delimiter: string = ''): string; virtual;
 
     { Adds @code(thisString) to the end of the list.
 
@@ -180,7 +200,30 @@ type AStringList = class(ALinkedList)
       remain the same for this item if other items are added or removed at
       locations PRIOR to the index returned.)
     }
-    function add(const thisString: string): longint; virtual;
+    function add(const thisString: string): TNodeAbsoluteIndex; virtual;
+
+    { Add several items to the end of the list.
+
+      This method iterates through each item in @code(strings) and calls
+      @link(AStringList.add) to add each item to the list.
+
+      @return(The total number of items added to the list.)
+    }
+    function addSeveral(const strings: array of string): TCensus; virtual;
+
+    { Add the items specified in @code(thisList) to the list.
+
+      This method assumes that @code(thisList) contains one or more values that
+      are separated by a delimiter of some kind (e.g., a comma).  It uses the
+      value of @code(delimiter) to split the string into its component values;
+      these values are then added as individual items to the list.  If
+      @code(delimiter) is not supplied, or if it is an empty string, then
+      the value of @link(llstDefaultDelimiter) is used.
+
+      @return(The total number of items added to the list.)
+    }
+    function explode(thisList: string;
+      delimiter: string = ''): TCensus; override;
 
     { Pushes the specified string value onto the list, as the last item in the
       list.  Calling @link(AStringList.pop) immediately after this routine will
@@ -190,6 +233,13 @@ type AStringList = class(ALinkedList)
       calls @link(ALinkedList.pushItem) to push the item onto the list.
     }
     procedure push(const thisString: string); virtual;
+
+    { Push several items onto the list.
+
+      This method iterates through each item in @code(strings) and calls
+      @link(AStringList.push) to push each string value onto the list.
+    }
+    procedure pushSeveral(const strings: array of string); virtual;
 
     { Pops the last item from the list.  This will be the string most recently
       added to the list by a call to @link(AStringList.add) or
@@ -207,12 +257,12 @@ type AStringList = class(ALinkedList)
       calls @link(ALinkedList.insertItemAt) to insert the item into the list.
 
       The first item in the list is always at index zero (0).  The last item
-      in the list is always at index (@link(ALinkedList.census) @code(- 1)).
+      in the list is always at index (@link(ALinkedList.census) @code(-1)).
       If @code(index) specifies a value that is greater than the number of items
       in the list, then @code(thisString) is inserted at the end of the list.
     }
-    procedure insertAt(const index: longint; const thisString: string);
-      virtual;
+    procedure insertAt(const index: TNodeRelativeIndex;
+      const thisString: string); virtual;
 
     { Performs a recursive search to determine whether or not the specified
       string exists within the list.  For very large lists, this search can
@@ -238,7 +288,7 @@ type AStringList = class(ALinkedList)
       found.)
     }
     function indexOf(const thisString: string;
-      const afterIndex: longint = 0): longint; virtual;
+      const afterIndex: TNodeRelativeIndex = 0): TNodeRelativeIndex; virtual;
 
     { Sort the list based on the values of its items.
 
@@ -251,7 +301,7 @@ type AStringList = class(ALinkedList)
     }
     procedure sort(const reverse: boolean = false); virtual;
 
-  // Properties ----------------------------------------------------------------
+    // Properties --------------------------------------------------------------
     { Retrieve the value of the item at the specified index.
 
       This method calls @link(ALinkedList.itemAt) to retrieve the
@@ -267,7 +317,7 @@ type AStringList = class(ALinkedList)
       If an invalid index is passed to this routine, it will return an empty
       string.
     }
-    function item(const thisIndex: longint): string; virtual;
+    function item(const thisIndex: TNodeRelativeIndex): string; virtual;
 
     { Set the value of the item at the specified index.
 
@@ -279,15 +329,9 @@ type AStringList = class(ALinkedList)
       if any.  An empty string will be returned if an invalid index is passed
       to this routine.)
     }
-    function setItem(const thisIndex: longint; const thisValue: string): string;
+    function setItem(const thisIndex: TNodeRelativeIndex;
+      const thisValue: string): string;
 end;
-{$ENDIF}
-{$IFDEF ReadResourceStrings}
-  { This string is used as the default delimiter by @link(AStringList.explode),
-    @link(AStringList.implode), @link(AVariantList.explode), and
-    @link(AVariantlist.implode) when no other delimiter is supplied.
-  }
-  slstDefaultDelimiter = ',';
 {$ENDIF}
 {$IFDEF ReadImplementation}
 // AStringListItem *************************************************************
@@ -418,6 +462,15 @@ begin
 end;
 
 // AStringList *****************************************************************
+// Construct a string list that contains the specified string values
+constructor AStringList.withStrings(const strings: array of string);
+
+begin
+  inherited new;
+
+  Self.pushSeveral(strings);
+end;
+
 {* Constructs and initializes a new instance of a string list.  This routine
    sets AStringList.delimiter to \p thisDelimiter and then calls
    AStringList.explode() to process \p thisList.
@@ -434,6 +487,114 @@ begin
     Self.explode(thisList, thisDelimiter);
 end;
 
+// Split a string into one or more lines
+class function AStringList.wrapString(const str: string;
+  const breakCharacters: array of string;
+  lineLength: longword = tosDefaultLineLength;
+  const firstLineStartColumn: longword = 0;
+  const remainingLineStartColumn: longword = 0;
+  padCharacter: string = ''): AStringList;
+
+var
+  // Refers to the tokens parsed from the string
+  Tokens: AStringList;
+  // Loop counters
+  i, j: TCensus;
+  // Stores the number of characters in the string
+  charLength: integer;
+  // Stores a character from the string
+  ch, nextChar: string;
+  // Stores a token from the string
+  token: string;
+  // Stores a single line of text
+  line: string;
+
+begin
+  Result := Self.new;
+
+  if str = '' then
+    exit;
+
+  Tokens := Self.new;
+  if Tokens = nil then
+    exit;
+
+  if lineLength = 0 then
+    lineLength := tosDefaultLineLength;
+
+  if padCharacter = '' then
+    padCharacter := tosWrapDefaultPadCharacter;
+
+  // Loop through the string, looking for tokens
+  token := '';
+
+  charLength := Charstring.census(str);
+
+  for i := 1 to charLength do
+  begin
+    ch := Charstring.character(str, i);
+    token := token + ch;
+
+    if i < charLength then
+      nextChar := Charstring.character(str, i + 1)
+
+    else
+      nextChar := '';
+
+    // Check to see if we have a delimiter
+    for j := 0 to (System.length(breakCharacters) - 1) do
+    begin
+      // Add the token to the broken string if a delimiter was found
+      if ch = breakCharacters[j] then
+      begin
+        { Check that the next character is not a number first, so we don't break
+          apart numbers.
+        }
+        if Charstring.positionOf(nextChar, charsDigits) = 0 then
+        begin
+          Tokens.push(token);
+          token := '';
+          break;
+        end;
+      end;
+    end;
+  end;
+
+  // Push the last token
+  Tokens.push(token);
+
+  // Now that we have a string broken into tokens, assemble our lines
+  line := '';
+
+  if firstLineStartColumn > 0 then
+    line := Charstring.ofCharacter(padCharacter, firstLineStartColumn);
+
+  for i := 0 to (Tokens.census - 1) do
+  begin
+    // Break the line when it becomes too long
+    if Charstring.census(line) +
+      Charstring.census(Tokens.item(i)) >= lineLength then
+    begin
+      Result.push(line);
+      line := '';
+
+      if remainingLineStartColumn > 0 then
+        line := Charstring.ofCharacter(padCharacter, remainingLineStartColumn);
+    end;
+
+    line := line + Tokens.item(i);
+  end;
+
+  // Push the last line
+  //writeln('Line: ', line);
+  Result.push(line);
+
+  //writeln('Wrapped text:', lineEnding, #9, Result.implode(','));
+
+  // Free the tokens
+  Tokens.free;
+end;
+
 // Initializer
 function AStringList.init: boolean;
 
@@ -446,6 +607,39 @@ begin
   end;
 end;
 
+{* Adds the specified string value to the list.  This routine calls
+   AList.addItem().
+
+   \return The index of the new item.  This index is not guaranteed to be
+   static, as a call to AStringList.insertAt() that specifies a lower index
+   will push all higher indexes "down" the list.
+*}
+function AStringList.add(const thisString: string): TNodeAbsoluteIndex;
+
+begin
+  result := Self.addItem(AStringListItem.withText(thisString));
+end;
+
+// Add several strings to the list
+function AStringList.addSeveral(const strings: array of string): TCensus;
+
+var
+  // Loop counter
+  i: longword;
+
+begin
+  result := 0;
+
+  if System.length(strings) = 0 then
+    exit;
+
+  for i := 0 to (System.high(strings)) do
+  begin
+    Self.add(strings[i]);
+    inc(result);
+  end;
+end;
+
 {* Builds the list from a delimited list of items.  This routine uses the value
    of delimiter to determine where to separate the list items.
 
@@ -453,7 +647,7 @@ end;
    (0) if \p thisList is an empty string.
 *}
 function AStringList.explode(thisList: string;
-  delimiter: string = ''): longword;
+  delimiter: string = ''): TCensus;
 
 var
   // Stores an item retrieved from the list
@@ -465,7 +659,7 @@ begin
   if thisList <> '' then
   begin
     if delimiter = '' then
-      delimiter := slstDefaultDelimiter;
+      delimiter := llstDefaultDelimiter;
 
     // Loop through the string
     while System.length(thisList) > 0 do
@@ -484,51 +678,6 @@ begin
   end;
 end;
 
-{* Condenses the list into a delimited string.  This string will contain each
-   value in the list, separated by the delimiter specified by
-   delimiter.  If there are no items in the list, an empty string
-   is returned.
-
-   \return A string, as described above.
-*}
-function AStringList.implode(delimiter: string = ''): string;
-
-var
-  // Refers to an item from the list
-  ThisItem: AStringListItem;
-
-begin
-  result := '';
-
-  if delimiter = '' then
-    delimiter := slstDefaultDelimiter;
-
-  ThisItem := AStringListItem(Self.FirstItem);
-
-  while ThisItem <> nil do
-  begin
-    result := result + ThisItem.text;
-
-    if ThisItem.Next <> nil then
-      result := result + delimiter;
-
-    ThisItem := AStringListItem(ThisItem.Next);
-  end;
-end;
-
-{* Adds the specified string value to the list.  This routine calls
-   AList.addItem().
-
-   \return The index of the new item.  This index is not guaranteed to be
-   static, as a call to AStringList.insertAt() that specifies a lower index
-   will push all higher indexes "down" the list.
-*}
-function AStringList.add(const thisString: string): longint;
-
-begin
-  result := Self.addItem(AStringListItem.withText(thisString));
-end;
-
 {* Pushes the specified string onto the end of the list.  This routine calls
    AList.pushItem().
 *}
@@ -536,6 +685,21 @@ procedure AStringList.push(const thisString: string);
 
 begin
   Self.pushItem(AStringListItem.withText(thisString));
+end;
+
+// Push several strings onto the list
+procedure AStringList.pushSeveral(const strings: array of string);
+
+var
+  // Loop counter
+  i: longword;
+
+begin
+  if System.length(strings) = 0 then
+    exit;
+
+  for i := 0 to (System.high(strings)) do
+    Self.push(strings[i]);
 end;
 
 {* Pops the last string value from the end of the list.  This routine calls
@@ -552,7 +716,8 @@ var
 
 begin
   result := '';
-  ThisItem := AStringListItem(Self.popItem);
+  ThisItem := AStringListItem(Self.PopItem);
+
   if ThisItem <> nil then
   begin
     result := ThisItem.text;
@@ -563,7 +728,8 @@ end;
 {* Inserts a string at the specified index.  This routine calls
    AList.insertItemAt().
 *}
-procedure AStringList.insertAt(const index: longint; const thisString: string);
+procedure AStringList.insertAt(const index: TNodeRelativeIndex;
+  const thisString: string);
 
 begin
   Self.insertItemAt(index, AStringListItem.withText(thisString));
@@ -581,7 +747,7 @@ end;
 
 // Find the index of the specified text
 function AStringList.indexOf(const thisString: string;
-  const afterIndex: longint = 0): longint;
+  const afterIndex: TNodeRelativeIndex = 0): TNodeRelativeIndex;
 
 var
   // Refers to the current item
@@ -616,92 +782,86 @@ begin
   end;
 end;
 
-// Partition the list
-function AStringList.partition(Left, Right, Pivot: ANode;
-  const reverse: boolean = false): ANode;
-
-var
-  { Stores the difference in "value" between two strings }
-  diff: longint;
-
-begin
-  Result := nil;
-  if (Pivot = nil) or (Left = nil) or (Right = nil) then
-    exit;
-
-  if reverse = false then
-  begin
-    { Move pivot to end }
-    Pivot.swapWith(Right);
-
-    Result := Left;
-
-    while Left <> Right do
-    begin
-      diff := SysUtils.compareStr(AStringListItem(Left).text,
-        AStringListItem(Pivot).text);
-
-      if diff <= 0 then
-      begin
-        Left.swapWith(Result);
-        Result := Result.next;
-      end;
-
-      Left := Left.Next;
-    end;
-
-    { Move pivot back into place }
-    Result.swapWith(Right);
-  end
-
-  else begin
-    { Move pivot to beginning }
-    Pivot.swapWith(Left);
-
-    Result := Right;
-
-    while Right <> Left do
-    begin
-      diff := SysUtils.compareStr(AStringListItem(Right).text,
-        AStringListItem(Pivot).text);
-
-      if diff >= 0 then
-      begin
-        Right.swapWith(Result);
-        Result := Result.previous;
-      end;
-
-      Right := Right.previous;
-    end;
-
-    { Move pivot back into place }
-    Result.swapWith(Left);
-  end;
-end;
-
-procedure AStringList.quickSort(Left, Right: ANode;
-  const reverse: boolean = false);
+procedure AStringList.quickSort(Left, Right: ANode);
 
 var
   { Stores the node around which the list pivots }
-  Pivot: ANode;
+  Pivot, Swap: ANode;
   { Stores the difference in "value" between two strings }
   diff: longint;
 
 begin
+  if Self.census <= 2 then
+    exit;
+
+  if Left = nil then
+    Left := Self.FirstItem;
+
+  if Right = nil then
+    Right := Self.LastItem;
+
   if (Left = nil) or (Right = nil) then
     exit;
 
-  diff := SysUtils.compareStr(AStringListItem(Left).text,
-    AStringListItem(Right).text);
+  Pivot := Right.Previous;
 
-  if diff = 0 then
+  if Pivot = nil then
     exit;
 
-  Pivot := Right.Previous;
-  Pivot := Self.partition(Left, Right, Pivot, reverse);
-  Self.quickSort(Left, Pivot.Previous, reverse);
-  Self.quickSort(Pivot.Next, Right, reverse);
+  while pointer(Left) <= pointer(Right) do
+  begin
+    diff := SysUtils.compareStr(AStringListItem(Left).text,
+      AStringListItem(Pivot).text);
+
+    writeln(SysUtils.format('Compared "%s" to pivot "%s"; result: %d', [
+      AStringListItem(Left).text, AStringListItem(Pivot).text, diff
+    ]));
+
+    while diff < 0 do
+    begin
+      Left := Left.Next;
+      if Left = nil then
+        exit;
+
+      diff := SysUtils.compareStr(AStringListItem(Left).text,
+        AStringListItem(Pivot).text);
+    writeln(SysUtils.format('Compared "%s" to pivot "%s"; result: %d', [
+      AStringListItem(Left).text, AStringListItem(Pivot).text, diff
+    ]));
+    end;
+
+    diff := SysUtils.compareStr(AStringListItem(Right).text,
+      AStringListItem(Pivot).text);
+
+    writeln(SysUtils.format('Compared "%s" to pivot "%s"; result: %d', [
+      AStringListItem(Left).text, AStringListItem(Pivot).text, diff
+    ]));
+
+    while diff > 0 do
+    begin
+      Right := Right.Previous;
+      if Right = nil then
+        exit;
+
+      diff := SysUtils.compareStr(AStringListItem(Right).text,
+        AStringListItem(Pivot).text);
+    writeln(SysUtils.format('Compared "%s" to pivot "%s"; result: %d', [
+      AStringListItem(Left).text, AStringListItem(Pivot).text, diff
+    ]));
+    end;
+
+    if pointer(Left) <= pointer(Right) then
+    begin
+      Swap := Left;
+      Left := Right;
+      Right := Swap;
+      Left := Left.Next;
+      Right := Right.Previous;
+    end;
+
+    Self.quicksort(Self.FirstItem, Right);
+    Self.quicksort(Left, Self.LastItem);
+  end;
 end;
 
 // Sort the list
@@ -712,7 +872,7 @@ begin
   if myCensus < 2 then
     exit;
 
-  Self.quickSort(MyFirstItem, MyLastItem, reverse);
+  Self.quickSort(MyFirstItem, MyLastItem);
 end;
 
 // Properties ------------------------------------------------------------------
@@ -721,7 +881,7 @@ end;
    \return The value of the specified string.  If \p thisIndex is out of range,
    this routine will return an empty string.
 *}
-function AStringList.item(const thisIndex: longint): string;
+function AStringList.item(const thisIndex: TNodeRelativeIndex): string;
 
 var
   // Refers to the item at the specified index
@@ -729,7 +889,8 @@ var
 
 begin
   result := '';
-  ThisItem := AStringListItem(Self.itemAt(thisIndex));
+  ThisItem := AStringListItem(Self.ItemAt(thisIndex));
+
   if ThisItem <> nil then
     result := ThisItem.text;
 end;
@@ -738,7 +899,7 @@ end;
    of range, this routine will add a new item to the end of the list that
    contains the specified string.
 *}
-function AStringList.setItem(const thisIndex: longint;
+function AStringList.setItem(const thisIndex: TNodeRelativeIndex;
   const thisValue: string): string;
 
 var

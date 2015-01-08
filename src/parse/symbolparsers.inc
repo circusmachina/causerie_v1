@@ -225,9 +225,15 @@ end;
 destructor ASymbolParser.destroy;
 
 begin
-  // Free the symbol table collection
-  if MySymbols <> nil then
-    MySymbols.free;
+  // Free some items only if we have no paret
+  if MyParent = nil then
+  begin
+    // Free the symbol table collection
+    if MySymbols <> nil then
+      MySymbols.free;
+  end;
+
+  MySymbols := nil;
 
   inherited destroy;
 end;
@@ -246,15 +252,27 @@ begin
   begin
     result := -1;
 
-    MySymbols := ASymbolTableVector.new;
-    if MySymbols = nil then
-      exit;
+    // See if we can inherit from our parent
+    if (MyParent <> nil) and (MyParent is ASymbolParser) then
+    begin
+      MySymbols := ASymbolParser(MyParent).Symbols;
+      myCurrentScope := ASymbolParser(MyParent).currentScope;
 
-    // Add the global scope to the collection
-    MySymbols.pushTable(ASymbolTable.new);
-
-    if MySymbols.length > 0 then
       result := 0;
+    end
+
+    // Otherwise, construct our own
+    else begin
+      MySymbols := ASymbolTableVector.new;
+      if MySymbols = nil then
+        exit;
+
+      // Add the global scope to the collection
+      MySymbols.pushTable(ASymbolTable.new);
+
+      if MySymbols.length > 0 then
+        result := 0;
+    end;
   end;
 end;
 
@@ -317,7 +335,7 @@ begin
 end;
 
 // Enter a new symbol into the global symbol table
-function ASymbolParser.enterGlobalSymbol(const ThisSymbol: ASymbol;
+function ASymbolParser.EnterGlobalSymbol(const ThisSymbol: ASymbol;
   const freeonFailure: boolean = true): ASymbol;
 
 begin
